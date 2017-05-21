@@ -3,3 +3,4 @@ dist/
 mock/
 webpack/
 lib/
+test_dist/
