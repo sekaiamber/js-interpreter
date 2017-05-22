@@ -34,7 +34,7 @@ describe('Combinators test', () => {
   });
 
   it('test concat parser', (done) => {
-    const tokens = lexer.lex('1+1');
+    const tokens = lexer.lex('1 + 1');
     const parser = new TagParser(NUMBER).concat(new ReservedParser('+', RESERVED)).concat(new TagParser(NUMBER));
     const result = parser.parse(tokens, 0);
     expect(result.value.length).to.equal(2);
