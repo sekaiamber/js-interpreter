@@ -42,4 +42,13 @@ describe('Combinators test', () => {
     expect(result.pos).to.equal(3);
     done();
   });
+
+  it('test alternate parser', (done) => {
+    const tokens = lexer.lex('*');
+    const parser = new ReservedParser('+', RESERVED).or(new ReservedParser('-', RESERVED)).or(new ReservedParser('*', RESERVED)).or(new ReservedParser('/', RESERVED));
+    const result = parser.parse(tokens, 0);
+    expect(result.value).to.equal('*');
+    expect(result.pos).to.equal(1);
+    done();
+  });
 });
