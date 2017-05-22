@@ -4,12 +4,15 @@ const ID = 0x01;
 const NUMBER = 0x02;
 
 const tokenExprs = [
+  // 分割
   [/^[ \n\t]+/, NONE],
   [/^#[^\n]*/, NONE],
+  // 赋值、优先级和代码块
   [/^:=/, RESERVED],
   [/^\(/, RESERVED],
   [/^\)/, RESERVED],
   [/^;/, RESERVED],
+  // 基础运算符
   [/^\+/, RESERVED],
   [/^-/, RESERVED],
   [/^\*/, RESERVED],
@@ -23,14 +26,22 @@ const tokenExprs = [
   [/^and/, RESERVED],
   [/^or/, RESERVED],
   [/^not/, RESERVED],
+  // 逻辑
   [/^if/, RESERVED],
   [/^then/, RESERVED],
   [/^else/, RESERVED],
   [/^while/, RESERVED],
   [/^do/, RESERVED],
   [/^end/, RESERVED],
+  // 变量
   [/^[0-9]+/, NUMBER],
   [/^[A-Za-z][A-Za-z0-9_]*/, ID],
 ];
 
 export default tokenExprs;
+export {
+  NONE,
+  RESERVED,
+  ID,
+  NUMBER,
+};

@@ -12,7 +12,7 @@ export default class TagParser extends Parser {
     this.tag = tag;
   }
 
-  getResult(tokens, pos) {
+  parse(tokens, pos) {
     if (pos < tokens.length) {
       const token = tokens[pos];
       if (token.tag === this.tag) {

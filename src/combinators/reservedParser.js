@@ -13,7 +13,7 @@ export default class ReservedParser extends Parser {
     this.tag = tag;
   }
 
-  getResult(tokens, pos) {
+  parse(tokens, pos) {
     if (pos < tokens.length) {
       const token = tokens[pos];
       if (token.value === this.value && token.tag === this.tag) {
