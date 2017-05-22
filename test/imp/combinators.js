@@ -73,4 +73,13 @@ describe('Combinators test', () => {
     expect(result.pos).to.equal(0);
     done();
   });
+
+  it('test process parser', (done) => {
+    const token = lexer.lex('1 + 1');
+    const handler = value => parseInt(value[0][0], 10) + parseInt(value[1], 10);
+    const parser = new TagParser(NUMBER).concat(new ReservedParser('+', RESERVED)).concat(new TagParser(NUMBER)).do(handler);
+    const result = parser.parse(token, 0);
+    expect(result).to.equal(2);
+    done();
+  });
 });
