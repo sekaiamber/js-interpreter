@@ -6,6 +6,7 @@ import {
   TagParser,
   OptionParser,
   RepeatParser,
+  LazyParser,
 } from '../../src/combinators';
 import { tokenExprs, RESERVED, NUMBER, ID } from './fixtures';
 
@@ -80,6 +81,15 @@ describe('Combinators test', () => {
     const parser = new TagParser(NUMBER).concat(new ReservedParser('+', RESERVED)).concat(new TagParser(NUMBER)).do(handler);
     const result = parser.parse(token, 0);
     expect(result).to.equal(2);
+    done();
+  });
+
+  it('test lazy parser', (done) => {
+    const token = lexer.lex('a');
+    const parserFactory = () => new TagParser(ID);
+    const parser = new LazyParser(parserFactory);
+    const result = parser.parse(token, 0);
+    expect(result.value).to.equal('a');
     done();
   });
 });
