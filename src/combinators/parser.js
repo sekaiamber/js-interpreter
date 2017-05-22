@@ -3,6 +3,7 @@ import Result from './result';
 const baseCombinators = {
   concat: null,
   or: null,
+  do: null,
 };
 
 /**
@@ -15,6 +16,9 @@ class Parser {
   }
   or(other) {
     return new baseCombinators.or(this, other);
+  }
+  do(handler) {
+    return new baseCombinators.do(this, handler);
   }
   parse() {
     throw new Error('Cannot use base class Parser');
@@ -65,11 +69,35 @@ class AlternateParser extends Parser {
   }
 }
 
+/**
+ * 基础分析器-处理
+ * 这个分析器将接收一个分析器和一个处理函数，这个函数将处理Result.value并且返回真正的值。
+ * 这个分析器是执行代码的核心。
+ */
+
+class ProcessParser extends Parser {
+  constructor(parser, handler) {
+    super();
+    this.parser = parser;
+    this.handler = handler;
+  }
+
+  parse(tokens, pos) {
+    const result = this.parser.parse(tokens, pos);
+    if (result) {
+      return this.handler(result.value);
+    }
+    return null;
+  }
+}
+
 baseCombinators.concat = ConcatParser;
 baseCombinators.or = AlternateParser;
+baseCombinators.do = ProcessParser;
 
 export default Parser;
 export {
   ConcatParser,
   AlternateParser,
+  ProcessParser,
 };
