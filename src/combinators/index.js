@@ -1,6 +1,7 @@
 import ReservedParser from './reservedParser';
 import TagParser from './tagParser';
 import OptionParser from './optionParser';
+import RepeatParser from './repeatParser';
 import {
   ConcatParser,
 } from './parser';
@@ -12,4 +13,5 @@ export {
   ReservedParser,
   TagParser,
   OptionParser,
+  RepeatParser,
 };
