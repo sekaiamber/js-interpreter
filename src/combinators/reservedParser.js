@@ -3,7 +3,7 @@
  * 这个分析器将接收指定tag指定值的token。
  */
 
-import Parser from './Parser';
+import Parser from './parser';
 import Result from './result';
 
 export default class ReservedParser extends Parser {
