@@ -4,8 +4,9 @@ import Lexer from '../../src/lexer';
 import {
   ReservedParser,
   TagParser,
+  OptionParser,
 } from '../../src/combinators';
-import { tokenExprs, RESERVED, NUMBER } from './fixtures';
+import { tokenExprs, RESERVED, NUMBER, ID } from './fixtures';
 
 
 const lexer = new Lexer();
@@ -49,6 +50,17 @@ describe('Combinators test', () => {
     const result = parser.parse(tokens, 0);
     expect(result.value).to.equal('*');
     expect(result.pos).to.equal(1);
+    done();
+  });
+
+  it('test option parser', (done) => {
+    const tokens1 = lexer.lex('if a else b');
+    const tokens2 = lexer.lex('if a');
+    const parser = new ReservedParser('if', RESERVED).concat(new TagParser(ID)).concat(new OptionParser(new ReservedParser('else', RESERVED).concat(new TagParser(ID))));
+    const result1 = parser.parse(tokens1, 0);
+    const result2 = parser.parse(tokens2, 0);
+    expect(result1.pos).to.equal(tokens1.length);
+    expect(result2.pos).to.equal(tokens2.length);
     done();
   });
 });
