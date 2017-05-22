@@ -3,7 +3,7 @@
  * 这个分析器跟Reserved分析器很相似，只不过他只要求token是指定tag即可。
  */
 
-import Parser from './Parser';
+import Parser from './parser';
 import Result from './result';
 
 export default class TagParser extends Parser {
