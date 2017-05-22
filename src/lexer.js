@@ -19,8 +19,10 @@ export default class Lexer {
         match = subCharacters.match(pattern);
         if (match) {
           matchText = match[0];
-          const token = new Token(matchText, tag);
-          tokens.push(token);
+          if (tag) {
+            const token = new Token(matchText, tag);
+            tokens.push(token);
+          }
           break;
         }
       }
