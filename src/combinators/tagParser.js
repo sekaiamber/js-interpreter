@@ -1,6 +1,6 @@
 /**
- * 标记分析器
- * 这个分析器跟Reserved分析器很相似，只不过他只要求token是指定tag即可。
+ * 标记解析器
+ * 这个解析器跟Reserved解析器很相似，只不过他只要求token是指定tag即可。
  */
 
 import Parser from './parser';
