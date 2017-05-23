@@ -12,13 +12,13 @@ import {
 } from './parser';
 
 export {
-  // 基础分析器
+  // 基础解析器
   ConcatParser,
   AlternateParser,
   ProcessParser,
   ExpressionParser,
   ReservedParser,
-  // 独立分析器
+  // 独立解析器
   TagParser,
   OptionParser,
   RepeatParser,

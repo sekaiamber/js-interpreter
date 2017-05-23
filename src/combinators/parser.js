@@ -8,7 +8,7 @@ const baseCombinators = {
 };
 
 /**
- * 分析器基类
+ * 解析器基类
  */
 
 class Parser {
@@ -30,8 +30,8 @@ class Parser {
 }
 
 /**
- * 基础分析器-连接
- * 这个分析器将接一个左分析器和一个右分析器，他先执行左分析器，再执行右分析器
+ * 基础解析器-连接
+ * 这个解析器将接一个左解析器和一个右解析器，他先执行左解析器，再执行右解析器
  */
 
 class ConcatParser extends Parser {
@@ -54,8 +54,8 @@ class ConcatParser extends Parser {
 }
 
 /**
- * 基础分析器-或
- * 这个分析器先执行左分析器，如果有值，则返回，否则返回右分析器结果
+ * 基础解析器-或
+ * 这个解析器先执行左解析器，如果有值，则返回，否则返回右解析器结果
  */
 
 class AlternateParser extends Parser {
@@ -74,9 +74,9 @@ class AlternateParser extends Parser {
 }
 
 /**
- * 基础分析器-处理
- * 这个分析器将接收一个分析器和一个处理函数，这个函数将处理Result.value并且返回真正的值。
- * 这个分析器是执行代码的核心。
+ * 基础解析器-处理
+ * 这个解析器将接收一个解析器和一个处理函数，这个函数将处理Result.value并且返回真正的值。
+ * 这个解析器是执行代码的核心。
  */
 
 class ProcessParser extends Parser {
@@ -97,8 +97,8 @@ class ProcessParser extends Parser {
 }
 
 /**
- * 表达式分析器
- * 这个分析器主要是为了解决复合语句问题，复合语句在形成分析器的时候会产生左递归，这里使用这个分析器来解决问题。
+ * 表达式解析器
+ * 这个解析器主要是为了解决复合语句问题，复合语句在形成解析器的时候会产生左递归，这里使用这个解析器来解决问题。
  */
 
 class ExpressionParser extends Parser {

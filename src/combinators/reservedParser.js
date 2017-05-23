@@ -1,6 +1,6 @@
 /**
- * 关键字分析器
- * 这个分析器将接收指定tag指定值的token。
+ * 关键字解析器
+ * 这个解析器将接收指定tag指定值的token。
  */
 
 import Parser from './parser';
