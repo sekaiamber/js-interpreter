@@ -77,14 +77,14 @@ describe('Combinators test', () => {
   //   done();
   // });
 
-  // it('test process parser', (done) => {
-  //   const token = lexer.lex('1 + 1');
-  //   const handler = value => parseInt(value[0][0], 10) + parseInt(value[1], 10);
-  //   const parser = new TagParser(NUMBER).concat(new ReservedParser('+', RESERVED)).concat(new TagParser(NUMBER)).do(handler);
-  //   const result = parser.parse(token, 0);
-  //   expect(result).to.equal(2);
-  //   done();
-  // });
+  it('test process parser', (done) => {
+    const token = lexer.lex('1 + 1');
+    const handler = value => parseInt(value[0][0], 10) + parseInt(value[1], 10);
+    const parser = new TagParser(NUMBER).concat(new ReservedParser('+', RESERVED)).concat(new TagParser(NUMBER)).do(handler);
+    const result = parser.parse(token, 0);
+    expect(result.value).to.equal(2);
+    done();
+  });
 
   // it('test lazy parser', (done) => {
   //   const token = lexer.lex('a');
@@ -103,23 +103,23 @@ describe('Combinators test', () => {
   //   done();
   // });
 
-  it('test expression parser', (done) => {
-    const separator = new ReservedParser('+', RESERVED).do(() => (l, r) => l + r);
-    const parser = new ExpressionParser(new TagParser(ID), separator);
-    // const token1 = lexer.lex('a');
-    // const result1 = parser.parse(token1, 0);
-    const token2 = lexer.lex('a + b');
-    const result2 = parser.parse(token2, 0);
-    // const token3 = lexer.lex('a + b + c');
-    // const result3 = parser.parse(token3, 0);
-    // console.log(result1);
-    console.log(result2);
-    // console.log(result3);
-    done();
-    // separator = keyword('+') ^ (lambda x: lambda l, r: l + r)
-    //     parser = Exp(id, separator)
-    //     self.combinator_test('x', parser, 'x')
-    //     self.combinator_test('x + y', parser, 'xy')
-    //     self.combinator_test('x + y + z', parser, 'xyz')
-  });
+  // it('test expression parser', (done) => {
+  //   const separator = new ReservedParser('+', RESERVED).do(() => (l, r) => l + r);
+  //   const parser = new ExpressionParser(new TagParser(ID), separator);
+  //   // const token1 = lexer.lex('a');
+  //   // const result1 = parser.parse(token1, 0);
+  //   const token2 = lexer.lex('a + b');
+  //   const result2 = parser.parse(token2, 0);
+  //   // const token3 = lexer.lex('a + b + c');
+  //   // const result3 = parser.parse(token3, 0);
+  //   // console.log(result1);
+  //   console.log(result2);
+  //   // console.log(result3);
+  //   done();
+  //   // separator = keyword('+') ^ (lambda x: lambda l, r: l + r)
+  //   //     parser = Exp(id, separator)
+  //   //     self.combinator_test('x', parser, 'x')
+  //   //     self.combinator_test('x + y', parser, 'xy')
+  //   //     self.combinator_test('x + y + z', parser, 'xyz')
+  // });
 });

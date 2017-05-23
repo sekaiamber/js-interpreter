@@ -91,7 +91,8 @@ class ProcessParser extends Parser {
   parse(tokens, pos) {
     const result = this.parser.parse(tokens, pos);
     if (result) {
-      return this.handler(result.value);
+      result.value = this.handler(result.value);
+      return result;
     }
     return null;
   }
