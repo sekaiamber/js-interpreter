@@ -7,6 +7,7 @@ import {
   OptionParser,
   RepeatParser,
   LazyParser,
+  PhraseParser,
 } from '../../src/combinators';
 import { tokenExprs, RESERVED, NUMBER, ID } from './fixtures';
 
@@ -80,7 +81,7 @@ describe('Combinators test', () => {
     const handler = value => parseInt(value[0][0], 10) + parseInt(value[1], 10);
     const parser = new TagParser(NUMBER).concat(new ReservedParser('+', RESERVED)).concat(new TagParser(NUMBER)).do(handler);
     const result = parser.parse(token, 0);
-    expect(result).to.equal(2);
+    expect(result.value).to.equal(2);
     done();
   });
 
@@ -90,6 +91,29 @@ describe('Combinators test', () => {
     const parser = new LazyParser(parserFactory);
     const result = parser.parse(token, 0);
     expect(result.value).to.equal('a');
+    done();
+  });
+
+  it('test phrase parser', (done) => {
+    const token = lexer.lex('a');
+    const parser = new PhraseParser(new TagParser(ID));
+    const result = parser.parse(token, 0);
+    expect(result.value).to.equal('a');
+    done();
+  });
+
+  it('test expression parser', (done) => {
+    const separator = new ReservedParser('+', RESERVED).do(() => (l, r) => l + r);
+    const parser = new TagParser(ID).join(separator);
+    const token1 = lexer.lex('a');
+    const result1 = parser.parse(token1, 0);
+    const token2 = lexer.lex('a + b');
+    const result2 = parser.parse(token2, 0);
+    const token3 = lexer.lex('a + b + c');
+    const result3 = parser.parse(token3, 0);
+    expect(result1.value).to.equal('a');
+    expect(result2.value).to.equal('ab');
+    expect(result3.value).to.equal('abc');
     done();
   });
 });
