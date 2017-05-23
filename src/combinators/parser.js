@@ -43,10 +43,8 @@ class ConcatParser extends Parser {
 
   parse(tokens, pos) {
     const leftResult = this.left.parse(tokens, pos);
-    console.log('left', leftResult);
     if (leftResult) {
       const rightResult = this.right.parse(tokens, leftResult.pos);
-      console.log('right', rightResult);
       if (rightResult) {
         return new Result([leftResult.value, rightResult.value], rightResult.pos);
       }
@@ -111,21 +109,16 @@ class ExpressionParser extends Parser {
   }
 
   parse(tokens, pos) {
-    console.log(tokens);
     let result = this.parser.parse(tokens, pos);
-    console.log(result);
     const nextFactory = (parsed) => {
       const sepfunc = parsed[0];
       const right = parsed[1];
       return sepfunc(result.value, right);
     };
-    const nextParser = this.separator.concat(this.parser.do(nextFactory));
+    const nextParser = this.separator.concat(this.parser).do(nextFactory);
     let nextResult = result;
-    console.log('-------------------');
     while (nextResult) {
       nextResult = nextParser.parse(tokens, result.pos);
-      console.log(nextParser);
-      console.log(nextResult);
       if (nextResult) {
         result = nextResult;
       }
