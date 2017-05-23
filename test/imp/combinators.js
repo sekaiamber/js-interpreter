@@ -103,8 +103,8 @@ describe('Combinators test', () => {
   });
 
   it('test expression parser', (done) => {
-    const separator = new ReservedParser('+', RESERVED).do(() => (l, r) => l + r);
-    const parser = new TagParser(ID).join(separator);
+    let separator = new ReservedParser('+', RESERVED).do(() => (l, r) => l + r);
+    let parser = new TagParser(ID).join(separator);
     const token1 = lexer.lex('a');
     const result1 = parser.parse(token1, 0);
     const token2 = lexer.lex('a + b');
@@ -114,6 +114,23 @@ describe('Combinators test', () => {
     expect(result1.value).to.equal('a');
     expect(result2.value).to.equal('ab');
     expect(result3.value).to.equal('abc');
+
+    separator = (
+      new ReservedParser('+', RESERVED)
+      .or(new ReservedParser('-', RESERVED))
+      .do((operator) => {
+        if (operator === '+') return (l, r) => parseFloat(l) + parseFloat(r);
+        return (l, r) => parseFloat(l) - parseFloat(r);
+      })
+    );
+    parser = new TagParser(NUMBER).join(separator);
+    const token4 = lexer.lex('1 + 2');
+    const result4 = parser.parse(token4, 0);
+    const token5 = lexer.lex('1 + 2 - 4');
+    const result5 = parser.parse(token5, 0);
+    expect(result4.value).to.equal(3);
+    expect(result5.value).to.equal(-1);
+
     done();
   });
 });
