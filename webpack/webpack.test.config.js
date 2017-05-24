@@ -16,14 +16,12 @@ var config = {
 
   plugins: [
     new WebpackShellPlugin({
-      onBuildStart: [
+      onBuildExit: [
         'echo',
         'echo ===============',
         'echo [ Testing IMP ]',
         'echo ===============',
         'echo',
-      ],
-      onBuildExit: [
         'mocha test_dist/imp/test.js --slow 5000 --timeout 10000 --reporter nyan'
       ]
     })
