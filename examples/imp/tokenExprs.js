@@ -1,7 +1,7 @@
 const NONE = 0x00;
 const RESERVED = 0x01;
-const ID = 0x01;
-const NUMBER = 0x02;
+const ID = 0x02;
+const NUMBER = 0x03;
 
 const tokenExprs = [
   // 分割
