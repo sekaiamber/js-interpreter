@@ -20,10 +20,10 @@ for (let i = 0; i < tokenExprs.length; i += 1) {
 
 describe('Combinators test', () => {
   it('test reserved parser', (done) => {
-    const tokens = lexer.lex('when');
-    const parser = new ReservedParser('when', RESERVED);
+    const tokens = lexer.lex('if');
+    const parser = new ReservedParser('if', RESERVED);
     const result = parser.parse(tokens, 0);
-    expect(result.value).to.equal('when');
+    expect(result.value).to.equal('if');
     expect(result.pos).to.equal(1);
     done();
   });
