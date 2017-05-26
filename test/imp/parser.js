@@ -10,6 +10,7 @@ import {
 import {
   NumberAExp,
   IdAExp,
+  BasicOperationAExp,
 } from './../../examples/imp/ast';
 import precedence from './../../examples/imp/parser/precedence';
 import { tokenExprs } from './fixtures';
@@ -81,6 +82,24 @@ describe('IMP parser test', () => {
     const tokens = lexer.lex('(6)');
     const result = parser.parse(tokens, 0);
     expect(result.value.valueOf()).to.equal(new NumberAExp(6).valueOf());
+    done();
+  });
+
+  it('basic operation aexp', (done) => {
+    const parser = aexp();
+    const tokens = lexer.lex('2 + 3 * 4');
+    const result = parser.parse(tokens, 0);
+    const expectResult = new BasicOperationAExp('+', new NumberAExp(2), new BasicOperationAExp('*', new NumberAExp(3), new NumberAExp(4)));
+    expect(result.value.valueOf()).to.equal(expectResult.valueOf());
+    done();
+  });
+
+  it('basic operation group aexp', (done) => {
+    const parser = aexp();
+    const tokens = lexer.lex('(2 + 3) * 4');
+    const result = parser.parse(tokens, 0);
+    const expectResult = new BasicOperationAExp('*', new BasicOperationAExp('+', new NumberAExp(2), new NumberAExp(3)), new NumberAExp(4));
+    expect(result.value.valueOf()).to.equal(expectResult.valueOf());
     done();
   });
 });
