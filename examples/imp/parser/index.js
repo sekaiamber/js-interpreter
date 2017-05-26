@@ -8,6 +8,11 @@ import aexp, {
   aexpGroup,
   aexpTerm,
 } from './aexp';
+import bexp, {
+  bexpRelationalOperation,
+  bexpGroup,
+  bexpNot,
+} from './bexp';
 
 
 export {
@@ -18,4 +23,8 @@ export {
   aexpValue,
   aexpGroup,
   aexpTerm,
+  bexp,
+  bexpRelationalOperation,
+  bexpGroup,
+  bexpNot,
 };
