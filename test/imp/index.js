@@ -1,4 +1,4 @@
-// import './lexer';
-// import './combinators';
-// import './ast';
+import './lexer';
+import './combinators';
+import './ast';
 import './parser';
