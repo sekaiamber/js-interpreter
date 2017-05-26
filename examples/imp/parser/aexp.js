@@ -55,12 +55,12 @@ function aexpTerm() {
  * 算数表达式优先级
  */
 
-const aexpPrecedenceLevels = [
+const _aexpPrecedenceLevels = [
   ['*', '/'],
   ['+', '-'],
 ];
 
-function processBasicOperation(op) {
+function _processBasicOperation(op) {
   return (l, r) => new BasicOperationAExp(op, l, r);
 }
 
@@ -69,7 +69,7 @@ function processBasicOperation(op) {
  */
 
 function aexp() {
-  return precedence(aexpTerm(), aexpPrecedenceLevels, processBasicOperation);
+  return precedence(aexpTerm(), _aexpPrecedenceLevels, _processBasicOperation);
 }
 
 _temp.aexp = aexp;

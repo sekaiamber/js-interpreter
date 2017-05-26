@@ -6,11 +6,16 @@ import {
   id,
   keyword,
   aexp,
+  bexp,
 } from './../../examples/imp/parser';
 import {
   NumberAExp,
   IdAExp,
   BasicOperationAExp,
+  RelationalOperationBExp,
+  NotBExp,
+  AndBExp,
+  OrBExp,
 } from './../../examples/imp/ast';
 import precedence from './../../examples/imp/parser/precedence';
 import { tokenExprs } from './fixtures';
@@ -99,6 +104,72 @@ describe('IMP parser test', () => {
     const tokens = lexer.lex('(2 + 3) * 4');
     const result = parser.parse(tokens, 0);
     const expectResult = new BasicOperationAExp('*', new BasicOperationAExp('+', new NumberAExp(2), new NumberAExp(3)), new NumberAExp(4));
+    expect(result.value.valueOf()).to.equal(expectResult.valueOf());
+    done();
+  });
+
+  it('relational operation bexp', (done) => {
+    const parser = bexp();
+    const tokens = lexer.lex('1 < 2');
+    const result = parser.parse(tokens, 0);
+    const expectResult = new RelationalOperationBExp('<', new NumberAExp(1), new NumberAExp(2));
+    expect(result.value.valueOf()).to.equal(expectResult.valueOf());
+    done();
+  });
+
+  it('not bexp', (done) => {
+    const parser = bexp();
+    const tokens = lexer.lex('not 1 < 2');
+    const result = parser.parse(tokens, 0);
+    const expectResult = new NotBExp(new RelationalOperationBExp('<', new NumberAExp(1), new NumberAExp(2)));
+    expect(result.value.valueOf()).to.equal(expectResult.valueOf());
+    done();
+  });
+
+  it('and bexp', (done) => {
+    const parser = bexp();
+    const tokens = lexer.lex('1 < 2 and 2 > 3');
+    const result = parser.parse(tokens, 0);
+    const expectResult = new AndBExp(new RelationalOperationBExp('<', new NumberAExp(1), new NumberAExp(2)), new RelationalOperationBExp('>', new NumberAExp(2), new NumberAExp(3)));
+    expect(result.value.valueOf()).to.equal(expectResult.valueOf());
+    done();
+  });
+
+  it('or bexp', (done) => {
+    const parser = bexp();
+    const tokens = lexer.lex('1 < 2 or 2 > 3');
+    const result = parser.parse(tokens, 0);
+    const expectResult = new OrBExp(new RelationalOperationBExp('<', new NumberAExp(1), new NumberAExp(2)), new RelationalOperationBExp('>', new NumberAExp(2), new NumberAExp(3)));
+    expect(result.value.valueOf()).to.equal(expectResult.valueOf());
+    done();
+  });
+
+  it('logic bexp', (done) => {
+    const parser = bexp();
+    const tokens = lexer.lex('1 < 2 and 3 < 4 or 5 < 6');
+    const result = parser.parse(tokens, 0);
+    const expectResult = new OrBExp(
+      new AndBExp(
+        new RelationalOperationBExp('<', new NumberAExp(1), new NumberAExp(2)),
+        new RelationalOperationBExp('<', new NumberAExp(3), new NumberAExp(4)),
+      ),
+      new RelationalOperationBExp('<', new NumberAExp(5), new NumberAExp(6))
+    );
+    expect(result.value.valueOf()).to.equal(expectResult.valueOf());
+    done();
+  });
+
+  it('logic group bexp', (done) => {
+    const parser = bexp();
+    const tokens = lexer.lex('1 < 2 and (3 < 4 or 5 < 6)');
+    const result = parser.parse(tokens, 0);
+    const expectResult = new AndBExp(
+      new RelationalOperationBExp('<', new NumberAExp(1), new NumberAExp(2)),
+      new OrBExp(
+        new RelationalOperationBExp('<', new NumberAExp(3), new NumberAExp(4)),
+        new RelationalOperationBExp('<', new NumberAExp(5), new NumberAExp(6)),
+      )
+    );
     expect(result.value.valueOf()).to.equal(expectResult.valueOf());
     done();
   });
