@@ -13,6 +13,12 @@ import bexp, {
   bexpGroup,
   bexpNot,
 } from './bexp';
+import stmt, {
+  stmtAssign,
+  stmtIf,
+  stmtList,
+  stmtWhile,
+} from './stmt';
 
 
 export {
@@ -27,4 +33,9 @@ export {
   bexpRelationalOperation,
   bexpGroup,
   bexpNot,
+  stmt,
+  stmtAssign,
+  stmtIf,
+  stmtList,
+  stmtWhile,
 };
