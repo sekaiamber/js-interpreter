@@ -29,9 +29,13 @@ class IMP {
   }
 
   eval(code, env = {}) {
+    // 词法分析
     const tokens = this.lexer.lex(code);
+    // 语法分析
     const parseResult = this.parse(tokens);
     const ast = parseResult.value;
+    // TODO: 语义分析
+    // 执行
     const result = ast.eval(env);
     return {
       _tokens: tokens,
