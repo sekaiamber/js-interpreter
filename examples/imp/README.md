@@ -11,7 +11,7 @@
 
 关于IMP语言的语法，可以参照[这个论文文档](http://fsl.cs.illinois.edu/images/5/52/CS422-Fall-2013-02a-IMP.pdf)。
 
-整体执行可以直接用`IMP`入口：
+整体执行可以直接用`IMP`入口：
 
 ```javascript
 import IMP from './examples/imp';
