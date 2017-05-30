@@ -7,6 +7,8 @@ import {
   keyword,
   aexp,
   bexp,
+  stmt,
+  stmtList,
 } from './../../examples/imp/parser';
 import {
   NumberAExp,
@@ -16,6 +18,10 @@ import {
   NotBExp,
   AndBExp,
   OrBExp,
+  AssignStmt,
+  IfStmt,
+  WhileStmt,
+  CompoundStmt,
 } from './../../examples/imp/ast';
 import precedence from './../../examples/imp/parser/precedence';
 import { tokenExprs } from './fixtures';
@@ -169,6 +175,52 @@ describe('IMP parser test', () => {
         new RelationalOperationBExp('<', new NumberAExp(3), new NumberAExp(4)),
         new RelationalOperationBExp('<', new NumberAExp(5), new NumberAExp(6)),
       )
+    );
+    expect(result.value.valueOf()).to.equal(expectResult.valueOf());
+    done();
+  });
+
+  it('assign statement', (done) => {
+    const parser = stmt();
+    const tokens = lexer.lex('a := 1');
+    const result = parser.parse(tokens, 0);
+    const expectResult = new AssignStmt('a', new NumberAExp(1));
+    expect(result.value.valueOf()).to.equal(expectResult.valueOf());
+    done();
+  });
+
+  it('if statement', (done) => {
+    const parser = stmt();
+    const tokens = lexer.lex('if 1 < 2 then a := 3 else a := 4 end');
+    const result = parser.parse(tokens, 0);
+    const expectResult = new IfStmt(
+      new RelationalOperationBExp('<', new NumberAExp(1), new NumberAExp(2)),
+      new AssignStmt('a', new NumberAExp(3)),
+      new AssignStmt('a', new NumberAExp(4)),
+    );
+    expect(result.value.valueOf()).to.equal(expectResult.valueOf());
+    done();
+  });
+
+  it('while statement', (done) => {
+    const parser = stmt();
+    const tokens = lexer.lex('while 1 < 2 do a := 3 end');
+    const result = parser.parse(tokens, 0);
+    const expectResult = new WhileStmt(
+      new RelationalOperationBExp('<', new NumberAExp(1), new NumberAExp(2)),
+      new AssignStmt('a', new NumberAExp(3))
+    );
+    expect(result.value.valueOf()).to.equal(expectResult.valueOf());
+    done();
+  });
+
+  it('compound statement', (done) => {
+    const parser = stmtList();
+    const tokens = lexer.lex('a := 1; b := 2');
+    const result = parser.parse(tokens, 0);
+    const expectResult = new CompoundStmt(
+      new AssignStmt('a', new NumberAExp(1)),
+      new AssignStmt('b', new NumberAExp(2)),
     );
     expect(result.value.valueOf()).to.equal(expectResult.valueOf());
     done();
