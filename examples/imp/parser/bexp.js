@@ -104,4 +104,5 @@ export {
   bexpRelationalOperation,
   bexpGroup,
   bexpNot,
+  bexpTerm,
 };
