@@ -1,7 +1,7 @@
 /* eslint import/no-extraneous-dependencies: 0 */
 import { expect } from 'chai';
 import Lexer from '../../src/lexer';
-import {
+import impParser, {
   number,
   id,
   keyword,
@@ -218,6 +218,17 @@ describe('IMP parser test', () => {
     const parser = stmtList();
     const tokens = lexer.lex('a := 1; b := 2');
     const result = parser.parse(tokens, 0);
+    const expectResult = new CompoundStmt(
+      new AssignStmt('a', new NumberAExp(1)),
+      new AssignStmt('b', new NumberAExp(2)),
+    );
+    expect(result.value.valueOf()).to.equal(expectResult.valueOf());
+    done();
+  });
+
+  it('imp program parser', (done) => {
+    const tokens = lexer.lex('a := 1; b := 2');
+    const result = impParser(tokens);
     const expectResult = new CompoundStmt(
       new AssignStmt('a', new NumberAExp(1)),
       new AssignStmt('b', new NumberAExp(2)),
