@@ -9,8 +9,6 @@
 * 语义分析：分析上下文语法，检查语义，是否合规，比如变量无法像函数一样被调用
 * 执行
 
-关于IMP语言的语法，可以参照[这个论文文档](http://fsl.cs.illinois.edu/images/5/52/CS422-Fall-2013-02a-IMP.pdf)。
-
 整体执行可以直接用`IMP`入口：
 
 ```javascript
