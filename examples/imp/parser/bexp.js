@@ -1,3 +1,4 @@
+/* eslint no-use-before-define: 0 */
 /**
  * 这里是一系列IMP的布尔表达式(BExp)解析器
  */
@@ -34,11 +35,6 @@ function _processGroup(parsed) {
   return parsed[0][1];
 }
 
-const _temp = {
-  bexp: null,
-  bexpTerm: null,
-};
-
 /**
  * AExp布尔表达式解析器
  */
@@ -52,7 +48,7 @@ function bexpRelationalOperation() {
  */
 
 function bexpGroup() {
-  return keyword('(').concat(new LazyParser(_temp.bexp)).concat(keyword(')')).do(_processGroup);
+  return keyword('(').concat(new LazyParser(bexp)).concat(keyword(')')).do(_processGroup);
 }
 
 /**
@@ -60,7 +56,7 @@ function bexpGroup() {
  */
 
 function bexpNot() {
-  return keyword('not').concat(new LazyParser(_temp.bexpTerm)).do(parsed => new NotBExp(parsed[1]));
+  return keyword('not').concat(new LazyParser(bexpTerm)).do(parsed => new NotBExp(parsed[1]));
 }
 
 /**
@@ -70,7 +66,6 @@ function bexpNot() {
 function bexpTerm() {
   return bexpNot().or(bexpRelationalOperation()).or(bexpGroup());
 }
-_temp.bexpTerm = bexpTerm;
 
 /**
  * 布尔表达式优先级
@@ -97,7 +92,6 @@ function _processLogic(op) {
 function bexp() {
   return precedence(bexpTerm(), _bexpPrecedenceLevels, _processLogic);
 }
-_temp.bexp = bexp;
 
 export default bexp;
 export {

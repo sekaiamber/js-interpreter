@@ -1,11 +1,5 @@
+/* eslint no-use-before-define: 0 */
 import Result from './result';
-
-const baseCombinators = {
-  concat: null,
-  or: null,
-  do: null,
-  join: null,
-};
 
 /**
  * 解析器基类
@@ -13,16 +7,16 @@ const baseCombinators = {
 
 class Parser {
   concat(other) {
-    return new baseCombinators.concat(this, other);
+    return new ConcatParser(this, other);
   }
   or(other) {
-    return new baseCombinators.or(this, other);
+    return new AlternateParser(this, other);
   }
   do(handler) {
-    return new baseCombinators.do(this, handler);
+    return new ProcessParser(this, handler);
   }
   join(other) {
-    return new baseCombinators.join(this, other);
+    return new ExpressionParser(this, other);
   }
   parse() {
     throw new Error('Cannot use base class Parser');
@@ -126,11 +120,6 @@ class ExpressionParser extends Parser {
     return result;
   }
 }
-
-baseCombinators.concat = ConcatParser;
-baseCombinators.or = AlternateParser;
-baseCombinators.do = ProcessParser;
-baseCombinators.join = ExpressionParser;
 
 export default Parser;
 export {
