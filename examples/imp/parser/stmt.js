@@ -1,3 +1,4 @@
+/* eslint no-use-before-define: 0 */
 /**
  * 这里是一些IMP的语句类(Stmt)的解析器
  */
@@ -37,17 +38,13 @@ function _processWhile(parsed) {
   return new WhileStmt(parsed[0][0][0][1], parsed[0][1]);
 }
 
-const _temp = {
-  stmt: null,
-};
-
 /**
  * 语句列表
  */
 
 function stmtList() {
   const separator = keyword(';').do(() => (l, r) => new CompoundStmt(l, r));
-  return new ExpressionParser(_temp.stmt(), separator);
+  return new ExpressionParser(stmt(), separator);
 }
 
 /**
@@ -99,8 +96,6 @@ function stmtWhile() {
 function stmt() {
   return stmtAssign().or(stmtIf()).or(stmtWhile());
 }
-
-_temp.stmt = stmt;
 
 export default stmt;
 export {

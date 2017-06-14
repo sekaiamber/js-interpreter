@@ -1,3 +1,4 @@
+/* eslint no-use-before-define: 0 */
 /**
  * 这里是一系列IMP的算数表达式(AExp)解析器
  */
@@ -31,16 +32,12 @@ function _processGroup(parsed) {
   return parsed[0][1];
 }
 
-const _temp = {
-  aexp: null,
-};
-
 /**
  * 解析括号表达式
  */
 
 function aexpGroup() {
-  return keyword('(').concat(new LazyParser(_temp.aexp)).concat(keyword(')')).do(_processGroup);
+  return keyword('(').concat(new LazyParser(aexp)).concat(keyword(')')).do(_processGroup);
 }
 
 /**
@@ -71,8 +68,6 @@ function _processBasicOperation(op) {
 function aexp() {
   return precedence(aexpTerm(), _aexpPrecedenceLevels, _processBasicOperation);
 }
-
-_temp.aexp = aexp;
 
 
 export default aexp;
