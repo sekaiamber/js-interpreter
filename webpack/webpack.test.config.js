@@ -22,7 +22,7 @@ var config = {
         'echo [ Testing Slime ]',
         'echo ===============',
         'echo',
-        'mocha test_dist/slime/test.js --slow 5000 --timeout 10000'
+        'mocha test_dist/slime/test.js --slow 5000 --timeout 10000 --reporter nyan'
       ]
     })
   ],
