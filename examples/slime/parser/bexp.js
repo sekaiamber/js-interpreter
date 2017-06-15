@@ -1,6 +1,6 @@
 /* eslint no-use-before-define: 0 */
 /**
- * 这里是一系列IMP的布尔表达式(BExp)解析器
+ * 这里是一系列Slime的布尔表达式(BExp)解析器
  */
 
 import {
@@ -16,7 +16,7 @@ import aexp from './aexp';
 import { LazyParser } from '../../../src/combinators';
 import precedence, { anyOperatorInList } from './precedence';
 
-const _relops = ['<', '<=', '>', '>=', '=', '!='];
+const _relops = ['<', '<=', '>', '>=', '==', '!='];
 
 /**
  * 布尔表达式转化AST

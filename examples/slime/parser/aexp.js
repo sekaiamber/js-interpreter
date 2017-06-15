@@ -1,6 +1,6 @@
 /* eslint no-use-before-define: 0 */
 /**
- * 这里是一系列IMP的算数表达式(AExp)解析器
+ * 这里是一系列Slime的算数表达式(AExp)解析器
  */
 
 import {

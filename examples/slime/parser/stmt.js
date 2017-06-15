@@ -1,6 +1,6 @@
 /* eslint no-use-before-define: 0 */
 /**
- * 这里是一些IMP的语句类(Stmt)的解析器
+ * 这里是一些Slime的语句类(Stmt)的解析器
  */
 
 import {
@@ -52,7 +52,7 @@ function stmtList() {
  */
 
 function stmtAssign() {
-  return id.concat(keyword(':=')).concat(aexp()).do(_processAssign);
+  return id.concat(keyword('=')).concat(aexp()).do(_processAssign);
 }
 
 /**

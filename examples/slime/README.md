@@ -1,4 +1,4 @@
-# IMP 语言解释器实现
+# Slime 语言解释器实现
 
 *注：这里都从本项目的根目录开始。*
 
@@ -9,13 +9,13 @@
 * 语义分析：分析上下文语法，检查语义，是否合规，比如变量无法像函数一样被调用
 * 执行
 
-整体执行可以直接用`IMP`入口：
+整体执行可以直接用`Slime`入口：
 
 ```javascript
-import IMP from './examples/imp';
+import Slime from './examples/slime';
 
-const imp = new IMP();
-const result = imp.eval('a := 1');
+const slime = new Slime();
+const result = slime.eval('a := 1');
 console.log(result);
 // {
 //   _tokens: ...,
@@ -29,17 +29,17 @@ console.log(result);
 ## 词法分析
 
 ```javascript
-import { ImpLexer } from './examples/imp';
+import { SlimeLexer } from './examples/slime';
 
-const tokens = new ImpLexer.lex(code);
+const tokens = new SlimeLexer.lex(code);
 ```
 
 ## 语法分析
 
 ```javascript
-import { impParser } from './examples/imp';
+import { slimeParser } from './examples/slime';
 
-const parseResult = impParser(tokens);
+const parseResult = slimeParser(tokens);
 ```
 
 ## 语义分析
@@ -49,9 +49,9 @@ const parseResult = impParser(tokens);
 ## 执行
 
 ```javascript
-import { impParser } from './examples/imp';
+import { slimeParser } from './examples/slime';
 
-const parseResult = impParser(tokens);
+const parseResult = slimeParser(tokens);
 const ast = parseResult.value;
 const env = { ... }; // 设置全局环境
 const result = ast.eval(env);

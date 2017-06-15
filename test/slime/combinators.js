@@ -29,10 +29,10 @@ describe('Combinators test', () => {
   });
 
   it('test tag parser', (done) => {
-    const tokens = lexer.lex(':=');
+    const tokens = lexer.lex('=');
     const parser = new TagParser(RESERVED);
     const result = parser.parse(tokens, 0);
-    expect(result.value).to.equal(':=');
+    expect(result.value).to.equal('=');
     expect(result.pos).to.equal(1);
     done();
   });

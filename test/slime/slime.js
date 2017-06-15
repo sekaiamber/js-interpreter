@@ -1,20 +1,20 @@
 /* eslint import/no-extraneous-dependencies: 0 */
 import { expect } from 'chai';
-import IMP, {
-  ImpLexer,
-} from './../../examples/imp';
+import Slime, {
+  SlimeLexer,
+} from './../../examples/slime';
 
-describe('IMP test', () => {
+describe('Slime test', () => {
   it('lexer test', (done) => {
-    const lexer = new ImpLexer();
-    const tokens = lexer.lex('a := 1');
+    const lexer = new SlimeLexer();
+    const tokens = lexer.lex('a = 1');
     expect(tokens.length).to.equal(3);
     done();
   });
 
-  it('imp', (done) => {
-    const imp = new IMP();
-    const result = imp.eval('a := 1');
+  it('slime', (done) => {
+    const slime = new Slime();
+    const result = slime.eval('a = 1');
     expect(result.result).to.equal(1);
     expect(result.env.a).to.equal(1);
     done();

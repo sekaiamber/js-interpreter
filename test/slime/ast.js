@@ -12,7 +12,7 @@ import {
   CompoundStmt,
   IfStmt,
   WhileStmt,
-} from './../../examples/imp/ast';
+} from './../../examples/slime/ast';
 
 describe('AST test', () => {
   it('number AExp', (done) => {

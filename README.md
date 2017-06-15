@@ -8,4 +8,4 @@
 
 包括：
 
-* [IMP](https://github.com/sekaiamber/js-interpreter/tree/master/examples/imp)
+* [Slime](https://github.com/sekaiamber/js-interpreter/tree/master/examples/slime)

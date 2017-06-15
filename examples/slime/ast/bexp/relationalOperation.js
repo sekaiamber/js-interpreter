@@ -29,7 +29,7 @@ export default class RelationalOperationBExp extends BExp {
       case '>=':
         value = left >= right;
         break;
-      case '=':
+      case '==':
         value = left === right;
         break;
       case '!=':
