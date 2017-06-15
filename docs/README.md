@@ -46,17 +46,17 @@
 
 了解解释器的原理可以有助于我们设计合理的领域特定语言(DSL)，优化已有的代码，甚至编写自己的代码高亮和提示工具。
 
-## 0x01 IMP语言
+## 0x01 Slime语言
 
-我想找一个简答的语言来作为这个项目的第一个实例，搜索了很久，终于找到了一个足够简单的语言：[IMP语言的解释器的Python实现](https://jayconrod.com/posts/37/a-simple-interpreter-from-scratch-in-python-part-1)。
+我想找一个简答的语言来作为这个项目的第一个实例。所以我搞了一个很简单的语言。
 
-这个语言是这个系列教程的自创语言，结构十分简单，通过文章描述，可以得知IMP简直就是一种最最基础的编程语言：
+这个语言是专属于本文的毫无用处的语言，结构十分简单，通过文章描述，可以得知Slime简直就是一种最最基础的编程语言：
 * 拥有顺序、判断、循环3种基本结构
 * 没有函数、类等高级功能
 * 全部变量，没有作用域
 * 只有整形，没有其他类型
 
-IMP的BNF表示如下：
+Slime的BNF表示如下：
 
 ```
 <Number> ::= 正整数值
@@ -71,21 +71,21 @@ IMP的BNF表示如下：
           |  <AExp> > <AExp>
           |  <AExp> <= <AExp>
           |  <AExp> >= <AExp>
-          |  <AExp> = <AExp>
+          |  <AExp> == <AExp>
           |  <AExp> != <AExp>
           |  not <BExp>
           |  <BExp> and <BExp>
           |  <BExp> or <BExp>
-  <Stmt> ::= Id := <AExp>
+  <Stmt> ::= Id = <AExp>
           |  <Stmt>; <Stmt>
           |  if <BExp> then <Stmt> else <Stmt> end
           |  while <BExp> do <Stmt> end
    <Pgm> ::= intList{Id}; Stmt
 ```
 
-麻雀虽小五脏俱全，让我们来研读一下IMP语言的BNF，它指出，IMP只有一种数据类型就是正整数类型，IMP拥有变量ID。
+麻雀虽小五脏俱全，让我们来研读一下Slime语言的BNF，它指出，Slime只有一种数据类型就是正整数类型，Slime拥有变量ID。
 
-IMP拥有两种类型的表达式：`AExp`(代数表达式)和`BExp`(布尔表达式)。其中`AExp`包含数字类型和变量的引用以及四则运算。
+Slime拥有两种类型的表达式：`AExp`(代数表达式)和`BExp`(布尔表达式)。其中`AExp`包含数字类型和变量的引用以及四则运算。
 
 `AExp`:
 ```ruby
@@ -105,7 +105,7 @@ not y # 与或非逻辑
 1 < 2 and 2 < 3
 ```
 
-IMP包含一系列`Stmt`语句，这部分语句用来控制程序运行：
+Slime包含一系列`Stmt`语句，这部分语句用来控制程序运行：
 
 ```ruby
 x := 1 # 赋值
@@ -122,9 +122,9 @@ while 1 < 2 do
 end
 ```
 
-整个IMP程序其实就是一个巨大的`Stmt`，以及一个全局变量字典`intList{Id}`。
+整个Slime程序其实就是一个巨大的`Stmt`，以及一个全局变量字典`intList{Id}`。
 
-以上就是IMP语言的所有语法。
+以上就是Slime语言的所有语法。
 
 ## 0x02 实现词法分析器(Lexer)
 
@@ -145,9 +145,9 @@ class Token {
 
 `Lexer`的功能其实十分简单：根据一定的规则对源代码进行分词处理。这个规则一般使用正则表达式来判定。
 
-让我们来看一下IMP的分词规则，它拥有一个**正则表达式**和一个**tag类型**，我们希望Lexer能接受如下格式的规则：
+让我们来看一下Slime的分词规则，它拥有一个**正则表达式**和一个**tag类型**，我们希望Lexer能接受如下格式的规则：
 
-`examples/imp/tokenExprs.js`
+`examples/slime/tokenExprs.js`
 ```javascript
 const NONE = 0x00;
 const RESERVED = 0x01;
@@ -253,7 +253,7 @@ console.log(tokens);
 // ]
 ```
 
-更多关于Lexer的测试可以参照`test/imp/lexer.js`。
+更多关于Lexer的测试可以参照`test/slime/lexer.js`。
 
 ## 0x03 语法解析器 - 解析器组合子
 
@@ -307,7 +307,7 @@ console.log(tokens);
 
 在JavaScript中，我们可以简单地把组合子也看成一种解析器，然后把组合过程当成所有解析器中都继承的函数。解析器组合子明显的一个好处是，因为它脱胎于函数式编程，所以表现在JavaScript上，可以很方便的做到**链式调用**。
 
-我将编写一个最最简单基础的解析器组合子库，用这些基础组合子来拼出一些稍微复杂的组合子，最后针对IMP语言构建出它的语法解析器。
+我将编写一个最最简单基础的解析器组合子库，用这些基础组合子来拼出一些稍微复杂的组合子，最后针对Slime语言构建出它的语法解析器。
 
 先做基础组合子，也是因为组合子逻辑跟实际语法无关，基础的组合子可以用到任何语言上。
 

@@ -7,8 +7,7 @@ const tokenExprs = [
   // 分割
   [/^[ \n\t]+/, NONE],
   [/^#[^\n]*/, NONE],
-  // 赋值、优先级和代码块
-  [/^:=/, RESERVED],
+  // 优先级和代码块
   [/^\(/, RESERVED],
   [/^\)/, RESERVED],
   [/^;/, RESERVED],
@@ -22,7 +21,7 @@ const tokenExprs = [
   [/^>=/, RESERVED],
   [/^>/, RESERVED],
   [/^!=/, RESERVED],
-  [/^=/, RESERVED],
+  [/^==/, RESERVED],
   [/^and/, RESERVED],
   [/^or/, RESERVED],
   [/^not/, RESERVED],
@@ -33,7 +32,8 @@ const tokenExprs = [
   [/^while/, RESERVED],
   [/^do/, RESERVED],
   [/^end/, RESERVED],
-  // 变量
+  // 变量和赋值
+  [/^=/, RESERVED],
   [/^[0-9]+/, NUMBER],
   [/^[A-Za-z][A-Za-z0-9_]*/, ID],
 ];

@@ -1,12 +1,12 @@
 import Lexer from '../../src/lexer';
 import tokenExprs from './tokenExprs';
-import impParser from './parser';
+import SlimeParser from './parser';
 
 /**
- * imp分词器
+ * slime分词器
  */
 
-class ImpLexer extends Lexer {
+class SlimeLexer extends Lexer {
   constructor() {
     super();
     this._addTokenExpression = this.addTokenExpression;
@@ -19,13 +19,13 @@ class ImpLexer extends Lexer {
 }
 
 /**
- * imp解释器
+ * slime解释器
  */
 
-class IMP {
+class Slime {
   constructor() {
-    this.lexer = new ImpLexer();
-    this.parse = impParser;
+    this.lexer = new SlimeLexer();
+    this.parse = SlimeParser;
   }
 
   eval(code, env = {}) {
@@ -45,8 +45,8 @@ class IMP {
   }
 }
 
-export default IMP;
+export default Slime;
 export {
-  ImpLexer,
-  impParser,
+  SlimeLexer,
+  SlimeParser,
 };

@@ -6,7 +6,7 @@ var path = require('path');
 var config = {
   context: path.join(__dirname, '..', '/test/'),
   entry: {
-    'imp/test': './imp/index.js',
+    'slime/test': './slime/index.js',
   },
   output: {
     path: path.join(__dirname, '..', '/test_dist'),
@@ -19,10 +19,10 @@ var config = {
       onBuildExit: [
         'echo',
         'echo ===============',
-        'echo [ Testing IMP ]',
+        'echo [ Testing Slime ]',
         'echo ===============',
         'echo',
-        'mocha test_dist/imp/test.js --slow 5000 --timeout 10000 --reporter nyan'
+        'mocha test_dist/slime/test.js --slow 5000 --timeout 10000'
       ]
     })
   ],

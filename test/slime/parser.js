@@ -1,7 +1,7 @@
 /* eslint import/no-extraneous-dependencies: 0 */
 import { expect } from 'chai';
 import Lexer from '../../src/lexer';
-import impParser, {
+import SlimeParser, {
   number,
   id,
   keyword,
@@ -9,7 +9,7 @@ import impParser, {
   bexp,
   stmt,
   stmtList,
-} from './../../examples/imp/parser';
+} from './../../examples/slime/parser';
 import {
   NumberAExp,
   IdAExp,
@@ -22,8 +22,8 @@ import {
   IfStmt,
   WhileStmt,
   CompoundStmt,
-} from './../../examples/imp/ast';
-import precedence from './../../examples/imp/parser/precedence';
+} from './../../examples/slime/ast';
+import precedence from './../../examples/slime/parser/precedence';
 import { tokenExprs } from './fixtures';
 
 const lexer = new Lexer();
@@ -32,7 +32,7 @@ for (let i = 0; i < tokenExprs.length; i += 1) {
   lexer.addTokenExpression(tokenExpr[0], tokenExpr[1]);
 }
 
-describe('IMP parser test', () => {
+describe('Slime parser test', () => {
   it('keyword', (done) => {
     const tokens = lexer.lex('if');
     const parser = keyword('if');
@@ -182,7 +182,7 @@ describe('IMP parser test', () => {
 
   it('assign statement', (done) => {
     const parser = stmt();
-    const tokens = lexer.lex('a := 1');
+    const tokens = lexer.lex('a = 1');
     const result = parser.parse(tokens, 0);
     const expectResult = new AssignStmt('a', new NumberAExp(1));
     expect(result.value.valueOf()).to.equal(expectResult.valueOf());
@@ -191,7 +191,7 @@ describe('IMP parser test', () => {
 
   it('if statement', (done) => {
     const parser = stmt();
-    const tokens = lexer.lex('if 1 < 2 then a := 3 else a := 4 end');
+    const tokens = lexer.lex('if 1 < 2 then a = 3 else a = 4 end');
     const result = parser.parse(tokens, 0);
     const expectResult = new IfStmt(
       new RelationalOperationBExp('<', new NumberAExp(1), new NumberAExp(2)),
@@ -202,9 +202,22 @@ describe('IMP parser test', () => {
     done();
   });
 
+  it('if equal statement', (done) => {
+    const parser = stmt();
+    const tokens = lexer.lex('if 1 == 2 then a = 3 else a = 4 end');
+    const result = parser.parse(tokens, 0);
+    const expectResult = new IfStmt(
+      new RelationalOperationBExp('==', new NumberAExp(1), new NumberAExp(2)),
+      new AssignStmt('a', new NumberAExp(3)),
+      new AssignStmt('a', new NumberAExp(4)),
+    );
+    expect(result.value.valueOf()).to.equal(expectResult.valueOf());
+    done();
+  });
+
   it('while statement', (done) => {
     const parser = stmt();
-    const tokens = lexer.lex('while 1 < 2 do a := 3 end');
+    const tokens = lexer.lex('while 1 < 2 do a = 3 end');
     const result = parser.parse(tokens, 0);
     const expectResult = new WhileStmt(
       new RelationalOperationBExp('<', new NumberAExp(1), new NumberAExp(2)),
@@ -216,7 +229,7 @@ describe('IMP parser test', () => {
 
   it('compound statement', (done) => {
     const parser = stmtList();
-    const tokens = lexer.lex('a := 1; b := 2');
+    const tokens = lexer.lex('a = 1; b = 2');
     const result = parser.parse(tokens, 0);
     const expectResult = new CompoundStmt(
       new AssignStmt('a', new NumberAExp(1)),
@@ -226,9 +239,9 @@ describe('IMP parser test', () => {
     done();
   });
 
-  it('imp program parser', (done) => {
-    const tokens = lexer.lex('a := 1; b := 2');
-    const result = impParser(tokens);
+  it('slime program parser', (done) => {
+    const tokens = lexer.lex('a = 1; b = 2');
+    const result = SlimeParser(tokens);
     const expectResult = new CompoundStmt(
       new AssignStmt('a', new NumberAExp(1)),
       new AssignStmt('b', new NumberAExp(2)),
