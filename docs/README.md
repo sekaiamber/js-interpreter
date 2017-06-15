@@ -311,3 +311,37 @@ console.log(tokens);
 
 先做基础组合子，也是因为组合子逻辑跟实际语法无关，基础的组合子可以用到任何语言上。
 
+### 基础组合子
+
+在写基础组合子之前，我们要做点额外的工作。
+
+首先来确定一下组合子接口，JS里没有接口，这儿我们简单的创建了一个基类来当做接口。
+
+`src/combinators/parser.js`
+```javascript
+/**
+ * 解析器基类
+ */
+
+class Parser {
+  concat(other) {
+    return new ConcatParser(this, other);
+  }
+  or(other) {
+    return new AlternateParser(this, other);
+  }
+  do(handler) {
+    return new ProcessParser(this, handler);
+  }
+  join(other) {
+    return new ExpressionParser(this, other);
+  }
+  parse() {
+    throw new Error('Cannot use base class Parser');
+  }
+}
+```
+
+这个基类拥有5个接口，其中`concat`、`or`、`do`、`join`分别是组合子逻辑的实现函数，在下面会一一实现这些解析器，`parse`函数是消费Token的入口，它将返回解析的结果。
+
+然后我们来定义一下`Result`类，这个类没其他作用，只是一个`Parser.parse`函数调用以后的结果的包装，如果正确解析的话，这个函数将返回包装了解析结果和Token序列索引的一个`Result`。
