@@ -15,7 +15,7 @@
 import Slime from './examples/slime';
 
 const slime = new Slime();
-const result = slime.eval('a := 1');
+const result = slime.eval('a = 1');
 console.log(result);
 // {
 //   _tokens: ...,
