@@ -155,11 +155,10 @@ const ID = 0x02;
 const NUMBER = 0x03;
 
 const tokenExprs = [
-  // 分割和注释
+  // 分割
   [/^[ \n\t]+/, NONE],
   [/^#[^\n]*/, NONE],
-  // 赋值、优先级和代码块
-  [/^:=/, RESERVED],
+  // 优先级和代码块
   [/^\(/, RESERVED],
   [/^\)/, RESERVED],
   [/^;/, RESERVED],
@@ -173,7 +172,7 @@ const tokenExprs = [
   [/^>=/, RESERVED],
   [/^>/, RESERVED],
   [/^!=/, RESERVED],
-  [/^=/, RESERVED],
+  [/^==/, RESERVED],
   [/^and/, RESERVED],
   [/^or/, RESERVED],
   [/^not/, RESERVED],
@@ -184,7 +183,8 @@ const tokenExprs = [
   [/^while/, RESERVED],
   [/^do/, RESERVED],
   [/^end/, RESERVED],
-  // 变量
+  // 变量和赋值
+  [/^=/, RESERVED],
   [/^[0-9]+/, NUMBER],
   [/^[A-Za-z][A-Za-z0-9_]*/, ID],
 ];
@@ -244,11 +244,11 @@ for (let i = 0; i < tokenExprs.length; i += 1) {
   //  这里我实现了一个添加正则表达式的函数
   lexer.addTokenExpression(tokenExpr[0], tokenExpr[1]);
 }
-const tokens = lexer.lex('a := 1');
+const tokens = lexer.lex('a = 1');
 console.log(tokens);
 // [
 //   Token{ value: 'a', tag: 2 },
-//   Token{ value: ':=', tag: 1 },
+//   Token{ value: '=', tag: 1 },
 //   Token{ value: '1', tag: 3 }
 // ]
 ```
@@ -265,7 +265,7 @@ console.log(tokens);
 
 在编译器和解释器中，它们一般会把Token序列转化为更易理解的分析树(parse tree)或者语法树(syntax tree)。
 
-例如某段程序就一行代码，就是赋值：`a := 1`。
+例如某段程序就一行代码，就是赋值：`a = 1`。
 
 让我们来看看这段程序的分析树大概长这样：
 
@@ -274,7 +274,7 @@ console.log(tokens);
         |
     <Assign>
      /  |  \
- <ID>  ':=' <Number>
+ <ID>  '=' <Number>
   |            |
   x            1
 ```
@@ -293,7 +293,7 @@ console.log(tokens);
    x      1
 ```
 
-语法树忽略了源代码上许多细节，将本质抽象出来，例如在这里我们忽略了`:=`，更多的时候，例如在描述代数表达式的时候，语法树比分析树更加具有优势，因为他会忽略`(`和`)`等符号，并且将运算优先级表现在树上。
+语法树忽略了源代码上许多细节，将本质抽象出来，例如在这里我们忽略了`=`，更多的时候，例如在描述代数表达式的时候，语法树比分析树更加具有优势，因为他会忽略`(`和`)`等符号，并且将运算优先级表现在树上。
 
 所以通过上面的说明，**分析树也被叫做具体语法树(concrete syntax tree, CST)，而语法树则被称为抽象语法树(AST)**。
 
