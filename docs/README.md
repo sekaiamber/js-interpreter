@@ -257,7 +257,9 @@ console.log(tokens);
 
 ## 0x03 语法解析器 - 解析器组合子
 
-语法解析器部分，是整个解释器的核心，它的功能是消费Token列表并输出抽象语法树AST。
+语法解析器部分，是整个解释器的核心，它的功能是消费Token列表并输出抽象语法树AST。从代码行为上来看，一个解析器能识别出特定语法的语句，例如赋值解析器可以解析`a = 1`，而无法解析`a + 1`。
+
+**注意：从这章开始，所有不是代码块的代码，或者说所有行内代码，都可能是伪代码，无法直接执行，只是表明意思。但是所有代码块的代码均是从项目中复制出来的，并且标示了源文件的目录地址。**
 
 ### 什么是抽象语法树AST
 
@@ -309,11 +311,13 @@ console.log(tokens);
 
 我将编写一个最最简单基础的解析器组合子库，用这些基础组合子来拼出一些稍微复杂的组合子，最后针对Slime语言构建出它的语法解析器。
 
-先做基础组合子，也是因为组合子逻辑跟实际语法无关，基础的组合子可以用到任何语言上。
+从下文开始，为了方便描述，我将对所有的基础组合子、复杂组合子以及由这些组合子产生的新的解析器，统称为解析器。
 
-### 基础组合子
+先做基础解析器，也是因为组合子逻辑跟实际语法无关，基础的解析器可以用到任何语言上。
 
-在写基础组合子之前，我们要做点额外的工作。
+### 基础解析器
+
+在写基础解析器之前，我们要做点额外的工作。
 
 首先来确定一下组合子接口，JS里没有接口，这儿我们简单的创建了一个基类来当做接口。
 
@@ -345,3 +349,224 @@ class Parser {
 这个基类拥有5个接口，其中`concat`、`or`、`do`、`join`分别是组合子逻辑的实现函数，在下面会一一实现这些解析器，`parse`函数是消费Token的入口，它将返回解析的结果。
 
 然后我们来定义一下`Result`类，这个类没其他作用，只是一个`Parser.parse`函数调用以后的结果的包装，如果正确解析的话，这个函数将返回包装了解析结果和Token序列索引的一个`Result`。
+
+`src/combinators/result.js`
+```javascript
+export default class Result {
+  constructor(value, pos) {
+    this.value = value;
+    this.pos = pos;
+  }
+
+  toString() {
+    return `Result(${this.value}, ${this.pos})`;
+  }
+}
+```
+
+接下来，我们将首先实现`Parser`基类中的一系列基础解析器。
+
+#### ConcatParser -- 连接解析器
+
+连接解析器(`parser.concat`)的作用是，接受两个解析器，将它们连接起来。
+
+举个栗子，假设我们有关键字解析器，能解析`+`这个关键字字符，又有常量解析器，能解析`1`或者`2`这样的常量。那么若是要解析`1 + 2`这样的常量加法语句，就可以用`常量解析器.concat(关键字解析器(+)).concat(常量解析器)`来获得这个变量赋值语句的解析器。
+
+所以它很简单，实例化的时候接收左右两个解析器，解析的时候先执行左边的解析器，再执行右边的解析器：
+
+`src/combinators/parser.js`
+```javascript
+/**
+ * 基础解析器-连接
+ * 这个解析器将接一个左解析器和一个右解析器，他先执行左解析器，再执行右解析器
+ */
+
+class ConcatParser extends Parser {
+  constructor(left, right) {
+    super();
+    this.left = left;
+    this.right = right;
+  }
+
+  parse(tokens, pos) {
+    const leftResult = this.left.parse(tokens, pos);
+    if (leftResult) {
+      const rightResult = this.right.parse(tokens, leftResult.pos);
+      if (rightResult) {
+        return new Result([leftResult.value, rightResult.value], rightResult.pos);
+      }
+    }
+    return null;
+  }
+}
+```
+
+请仔细体会其中的`pos`变化，因为消耗了token序列，所以将后移这里的token序列位置。
+
+正常解析的时候，将返回`new Result([leftResult.value, rightResult.value], rightResult.pos)`，这里将左右解析器的结果拿出来，并打包起来作为整个解析器的结果，消耗的token序列位置就是右解析器的位置。
+
+#### AlternateParser -- 或解析器
+
+或解析器(`parser.or`)的作用是，接受两个解析器，将它们连接起来，若第一个解析器解析成功，则返回解析结果，否则返回第二个解析器的解析结果。
+
+举个栗子，有4个关键字解析器，能分别解析`+`、`-`、`*`、`/`，那么就可以用`关键字解析器(+).or(关键字解析器(-)).or(关键字解析器(*)).or(关键字解析器(/))`来产生四则运算解析器。
+
+跟`ConcatParser`类似，只是`parse`函数有些微区别：
+
+`src/combinators/parser.js`
+```javascript
+/**
+ * 基础解析器-或
+ * 这个解析器先执行左解析器，如果有值，则返回，否则返回右解析器结果
+ */
+
+class AlternateParser extends Parser {
+  constructor(left, right) {
+    super();
+    this.left = left;
+    this.right = right;
+  }
+
+  parse(tokens, pos) {
+    const leftResult = this.left.parse(tokens, pos);
+    if (leftResult) return leftResult;
+    const rightResult = this.right.parse(tokens, pos);
+    return rightResult;
+  }
+}
+```
+
+这里token序列的消耗其实就是以执行的解析器为准。
+
+#### ProcessParser -- 解析处理器
+
+这个解析器呢，说实话应该是个处理器，它对应到`parser.do`，他接收一个解析器和一个处理函数，并在解析器解析成功时，使用处理函数来处理返回的Result，并返回一个新的Result。换一种说法，它的作用是用来处理AST，并返回真实的结果。
+
+举个例子，在`ConcatParser`的例子中，我们解析了`1 + 2`这样的语句，最后返回的应该类似`[[1, +], 2]`这样的东西，看起来是不是十分难受，于是我们搞一个处理函数（只是举例）：
+
+```javascript
+function (parsed) {
+  const left = parsed[0][0];
+  const right = parsed[1];
+  return left + right;
+}
+```
+
+这样，我们就能将结果从`[[1, +], 2]`变成`3`，整个AST产生之后，就是以处理器来计算整个AST获得最终结果。
+
+`src/combinators/parser.js`
+```javascript
+/**
+ * 基础解析器-处理
+ * 这个解析器将接收一个解析器和一个处理函数，这个函数将处理Result.value并且返回真正的值。
+ * 这个解析器是执行代码的核心。
+ */
+
+class ProcessParser extends Parser {
+  constructor(parser, handler) {
+    super();
+    this.parser = parser;
+    this.handler = handler;
+  }
+
+  parse(tokens, pos) {
+    const result = this.parser.parse(tokens, pos);
+    if (result) {
+      result.value = this.handler(result.value);
+      return result;
+    }
+    return null;
+  }
+}
+```
+
+处理器的本质是包装一个解析器变成一个新的解析器，它匹配的语句跟原本的解析器完全一样，只不过输出的东西是经过处理函数包装的。
+
+#### ExpressionParser -- 复合表达式解析器
+
+这个解析器是各个基础解析器中最复杂也是最难理解的一个，他的目的说起来很简单，他为了解析类似这样的内容：`a = 1; b = 2; c = 3`，以某些语句做分割(`;`)的一类语句。这里的分割是某种表达式，他们分割的内容是另一种表达式。
+
+举个最简单的例子来说：`1 + 2 + 3`或者`1 + 2 + 3 + 4`这样的不定量的复合四则运算，也许你觉得用上面的`ConcatParser`很简单的嘛：
+
+1. 先假设表达式`number`表示数字的解析器
+2. 那么复合语句`compoundStmt`就是类似`compoundStmt = compoundStmt.concat(+).concat(number)`这样的形式，
+3. 再回过头看看`compoundStmt`，他本身依赖了自己
+
+这里可以看到，在实例化的时候，`compoundStmt`将一直调用构造器，直到栈溢出。这种情况，从实质上来看，就是这种语法以某种语法元素开头，这种语法元素，本身或者经过推断就是语法本身，在编译原理中被称为[左递归](https://en.wikipedia.org/wiki/Left_recursion)，所有的自左向右自顶向下分析的语法分析器，都要避免这种情况。
+
+这儿我们提出的方案，是使用分割的形式来解决这方面的需求。所以它对应到`parser.join`，它接受两个解析器，第一个是内容解析器，用来匹配内容，第二个是分割解析器，用来匹配分割符或者分割语法。运行的逻辑是首先用内容解析器去匹配，若得到结果就使用分割解析器去匹配分隔语法，如此循环。分割解析器需要返回一个处理函数，用来从左到右依次处理内容解析器匹配到的内容，这个过程也是累加的过程。
+
+`src/combinators/parser.js`
+```javascript
+/**
+ * 表达式解析器
+ * 这个解析器主要是为了解决复合语句问题，复合语句在形成解析器的时候会产生左递归，这里使用这个解析器来解决问题。
+ */
+
+class ExpressionParser extends Parser {
+  constructor(parser, separator) {
+    super();
+    this.parser = parser;
+    this.separator = separator;
+  }
+
+  parse(tokens, pos) {
+    let result = this.parser.parse(tokens, pos);
+    const nextFactory = (parsed) => {
+      // 这个函数就是separator产生的处理函数
+      const sepfunc = parsed[0];
+      const right = parsed[1];
+      return sepfunc(result.value, right);
+    };
+    const nextParser = this.separator.concat(this.parser).do(nextFactory);
+    let nextResult = result;
+    while (nextResult) {
+      nextResult = nextParser.parse(tokens, result.pos);
+      if (nextResult) {
+        result = nextResult;
+      }
+    }
+    return result;
+  }
+}
+```
+
+来举个测试里的例子更加说明问题：
+
+`test/slime/combinators.js`
+```javascript
+// separator的do函数将返回一个处理函数，这个处理函数的意思是，将左右两个值相加
+let separator = new ReservedParser('+', RESERVED).do(() => (l, r) => l + r);
+// 使用join返回一个ExpressionParser，以ID为内容解析器，用上面的separator作为分割解析器
+let parser = new TagParser(ID).join(separator);
+const token1 = lexer.lex('a');
+const result1 = parser.parse(token1, 0);
+const token2 = lexer.lex('a + b');
+const result2 = parser.parse(token2, 0);
+// 解析的时候，首先用ID去匹配到了a
+// 然后内部构造了一些东西，看上面的源码，这时候匹配到`+`和后面的`b`，然后执行separate的do返回的处理函数，得到`a + b => ab`
+// 获得`ab`以后，接下去匹配，匹配到`+`和后面的`c`，执行处理函数，得到`ab + c => abc`
+const token3 = lexer.lex('a + b + c');
+const result3 = parser.parse(token3, 0);
+expect(result1.value).to.equal('a');
+expect(result2.value).to.equal('ab');
+expect(result3.value).to.equal('abc');
+
+// 这里提供了一个更加复杂和实际的用法
+// separator的do根据传入的不同操作符，返回不同的处理函数，用来做加法和减法
+separator = (
+  new ReservedParser('+', RESERVED)
+  .or(new ReservedParser('-', RESERVED))
+  .do((operator) => {
+    if (operator === '+') return (l, r) => parseFloat(l) + parseFloat(r);
+    return (l, r) => parseFloat(l) - parseFloat(r);
+  })
+);
+parser = new TagParser(NUMBER).join(separator);
+const token4 = lexer.lex('1 + 2');
+const result4 = parser.parse(token4, 0);
+const token5 = lexer.lex('1 + 2 - 4');
+const result5 = parser.parse(token5, 0);
+expect(result4.value).to.equal(3);
+expect(result5.value).to.equal(-1);
+```
