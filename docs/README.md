@@ -570,3 +570,197 @@ const result5 = parser.parse(token5, 0);
 expect(result4.value).to.equal(3);
 expect(result5.value).to.equal(-1);
 ```
+
+到此为止，我们最基本的`Parser`类已经构建完成，以后所有的其他解析器类，只要继承`Parser`基类，都能享受到上述4种组合方式，从而构建更加复杂的解析器。
+
+### 其他基础解析器
+
+我们事先了解析器基类，它提供了一套很通用的组合子函数，但是有些基础功能，写一些其他的基本解析器能解决很多问题，这一小节就来罗列以后需要的一些解析器。
+
+#### ReservedParser -- 关键字解析器
+
+这个解析器十分基础，它的作用就是匹配关键字，它接受一个值和一个类型来匹配关键字，解析时接收一个token，若token的tag和值跟解析器的期望相同，则返回值。
+
+`src/combinators/reservedParser.js`
+```javascript
+/**
+ * 关键字解析器
+ * 这个解析器将接收指定tag指定值的token。
+ */
+export default class ReservedParser extends Parser {
+  constructor(value, tag) {
+    super();
+    this.value = value;
+    this.tag = tag;
+  }
+
+  parse(tokens, pos) {
+    if (pos < tokens.length) {
+      const token = tokens[pos];
+      // 若value和tag相同则返回
+      if (token.value === this.value && token.tag === this.tag) {
+        return new Result(token.value, pos + 1);
+      }
+    }
+    return null;
+  }
+}
+```
+
+这个解析器虽然简单，但却是最常用的解析器之一，常见的方式是和`ConcatParser`连用：
+
+```javascript
+const parser = new ReservedParser('(', RESERVED)
+  .concat(new TagParser(NUMBER))
+  .concat(new ReservedParser(')', RESERVED))
+```
+
+上面那个毫无作用的parser能解析`(1)`或者`(999)`这样的语法。
+
+#### TagParser -- 标记解析器
+
+这个解析器和上面的`ReservedParser`十分相似，只不过他只匹配类型就够了。解析时只要token符合这个类型即可。
+
+`src/combinators/tagParser.js`
+```javascript
+/**
+ * 标记解析器
+ * 这个解析器跟Reserved解析器很相似，只不过他只要求token是指定tag即可。
+ */
+export default class TagParser extends Parser {
+  constructor(tag) {
+    super();
+    this.tag = tag;
+  }
+
+  parse(tokens, pos) {
+    if (pos < tokens.length) {
+      const token = tokens[pos];
+      // 只要类型一样即可返回
+      if (token.tag === this.tag) {
+        return new Result(token.value, pos + 1);
+      }
+    }
+    return null;
+  }
+}
+```
+
+这个解析器主要用在匹配变量和值上，例子在上面`ReservedParser`已经展示了。
+
+#### OptionParser -- 可选解析器
+
+这个解析器主要用在可能解析不一定存在的语句上，最常见的用处就是`if else`语句，其中`else`关键字以及后面的语句可能是不存在的。他在成功的时候返回解析内容，但跟其他解析器不同，解析失败的时候也将返回一个`Result`，只不过不消耗token序列。（换句话说，这个解析器永远是成功的，所以叫做可选解析器）
+
+`src/combinators/optionParser.js`
+```javascript
+/**
+ * 可选解析器
+ * 这个解析器接受一个解析器，解析时如果这个解析器有值，则返回，否则返回一个占位的result返回原来的pos。
+ * 这个解析器通常运用在某些可选语法中，比如`if else`，这个`else`可能是不存在的。
+ */
+export default class OptionParser extends Parser {
+  constructor(parser) {
+    super();
+    this.parser = parser;
+  }
+
+  parse(tokens, pos) {
+    const result = this.parser.parse(tokens, pos);
+    if (result) return result;
+    return new Result(null, pos);
+  }
+}
+```
+
+要仔细体会一下这个解析器和`AlternateParser`的区别，前者只接受一个解析器，后者接收两个，前者其实是一种占位措施，表示匹配元素**可能没有**，所以永远是解析成功的，而后者表示两者中有一个，否则解析失败。
+
+#### RepeatParser -- 重复解析器
+
+重复解析器也很简单，他的作用就是匹配一类不断重复的语法，直到匹配失败，最常见的是匹配定义数组的语法。值得注意的是，倘若第一次匹配就失败的时候，它任然返回成功，只不过结果的值为一个空数组。
+
+`src/combinators/repeatParser.js`
+```javascript
+/**
+ * 重复解析器
+ * 这个解析器接受一个解析器，解析时将不停得消耗Token，直到失败为止，返回之前的所有Results
+ */
+export default class RepeatParser extends Parser {
+  constructor(parser) {
+    super();
+    this.parser = parser;
+  }
+
+  parse(tokens, pos) {
+    const results = [];
+    let resultPos = pos;
+    let result = this.parser.parse(tokens, pos);
+    // 若失败则返回空数组
+    while (result) {
+      results.push(result.value);
+      resultPos = result.pos;
+      result = this.parser.parse(tokens, resultPos);
+    }
+    return new Result(results, pos);
+  }
+```
+
+#### LazyParser -- 惰性解析器
+
+这个解析器应该算是除了`ExpressionParser`外最难理解的解析器了。他接收一个输出解析器实例的函数，用来在解析时当场生成解析器。这是因为有些语法可能包含自身，比如算数表达式的也可能包含另一个算术表达式。那么这种递归情况就需要用当场生成解析器解析器来解决。
+
+`src/combinators/lazyParser.js`
+```javascript
+/**
+ * 惰性解析器
+ * 这个解析器接受一个解析器生成函数，只有当调用到的时候，才会去生成解析器。
+ */
+export default class LazyParser extends Parser {
+  constructor(parserFactory) {
+    super();
+    this.parser = null;
+    this.parserFactory = parserFactory;
+  }
+
+  parse(tokens, pos) {
+    if (!this.parser) {
+      this.parser = this.parserFactory();
+    }
+    return this.parser.parse(tokens, pos);
+  }
+}
+```
+
+值得注意的一点，同为破解递归的方式，`LazyParser`和`ExpressionParser`针对的情况不同，`ExpressionParser`的目的是为了将某些被特定语法分隔的语法的结果逐一累计操作，并输出一个结果，而`LazyParser`纯粹为了解决本身包含本身的情况，它对输入的解析器生成函数没有任何要求。
+
+#### PhraseParser -- 代码完整性解析器
+
+这个解析器的作用很简单，它的目的就是检查token序列有没有被消耗完，若传入它的解析器解析完成之后，token还没被消耗完，则认为代码完整性或者语法有问题。举个栗子：
+
+```ruby
+a = 1 +
+```
+
+这样的代码，就通不过`PhraseParser`，因为token消耗到`a = 1`的时候，已经结束解析，并且也没有语法对应后面的`+`。
+
+`src/combinators/phraseParser.js`
+```javascript
+/**
+ * 代码完整性解析器
+ * 这个解析器接受一个解析器，行为跟这个解析器完全一样，只不过它在这个解析器解析完毕之后，token必须消耗完，否则就返回null。
+ */
+export default class PhraseParser extends Parser {
+  constructor(parser) {
+    super();
+    this.parser = parser;
+  }
+
+  parse(tokens, pos) {
+    const result = this.parser.parse(tokens, pos);
+    if (result && result.pos === tokens.length) return result;
+    return null;
+  }
+}
+```
+
+事实上，这个解析器一般只用于最顶层的解析器，也就是说当我们构造了完整的一个语言的解析器的时候，最后用这个解析器包装一次即可。
