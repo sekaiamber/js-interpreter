@@ -56,58 +56,21 @@
 * 全部变量，没有作用域
 * 只有整形，没有其他类型
 
-Slime的BNF表示如下：
+Slime的语法例子如下，很像`ruby`的语法：
 
-```
-<Number> ::= 正整数值
-    <Id> ::= 变量引用
-  <AExp> ::= <Number>
-          |  <Id>
-          |  <AExp> + <AExp>
-          |  <AExp> - <AExp>
-          |  <AExp> * <AExp>
-          |  <AExp> / <AExp>
-  <BExp> ::= <AExp> < <AExp>
-          |  <AExp> > <AExp>
-          |  <AExp> <= <AExp>
-          |  <AExp> >= <AExp>
-          |  <AExp> == <AExp>
-          |  <AExp> != <AExp>
-          |  not <BExp>
-          |  <BExp> and <BExp>
-          |  <BExp> or <BExp>
-  <Stmt> ::= <Id> = <AExp>
-          |  <Stmt>; <Stmt>
-          |  if <BExp> then <Stmt> else <Stmt> end
-          |  while <BExp> do <Stmt> end
-   <Pgm> ::= intList{Id}; Stmt
-```
-
-麻雀虽小五脏俱全，让我们来研读一下Slime语言的BNF，它指出，Slime只有一种数据类型就是正整数类型，Slime拥有变量ID。
-
-Slime拥有两种类型的表达式：`AExp`(代数表达式)和`BExp`(布尔表达式)。其中`AExp`包含数字类型和变量的引用以及四则运算。Slime的语法类似`Ruby`的语法：
-
-`AExp`:
 ```ruby
 1 # 数字值
 x # 变量值
 1 + 1 # 四则运算
 x + 1 # 包含变量的四则运算
 1 + 1 + x # 复合四则运算
-```
 
-`BExp`:
-```ruby
-1 < 2 # 逻辑判断
+1 < 2 # 逻辑运算
 x == 1
 not y # 与或非逻辑
 1 < 2 or 2 < 3
 1 < 2 and 2 < 3
-```
 
-Slime包含一系列`Stmt`语句，这部分语句用来控制程序运行：
-
-```ruby
 x = 1 # 赋值
 x = 1; y = 2 # 复合语句
 # 判断
@@ -121,10 +84,6 @@ while 1 < 2 do
   x = x + 1
 end
 ```
-
-整个Slime程序其实就是一个巨大的`Stmt`，以及一个全局变量字典`intList{Id}`。
-
-以上就是Slime语言的所有语法。
 
 ## 0x02 实现词法分析器(Lexer)
 
@@ -255,7 +214,7 @@ console.log(tokens);
 
 更多关于Lexer的测试可以参照`test/slime/lexer.js`。
 
-## 0x03 语法解析器 - 解析器组合子
+## 0x03 语法解析器 -- 解析器组合子
 
 语法解析器部分，是整个解释器的核心，它的功能是消费Token列表并输出抽象语法树AST。从代码行为上来看，一个解析器能识别出特定语法的语句，例如赋值解析器可以解析`a = 1`，而无法解析`a + 1`。
 
@@ -764,3 +723,177 @@ export default class PhraseParser extends Parser {
 ```
 
 事实上，这个解析器一般只用于最顶层的解析器，也就是说当我们构造了完整的一个语言的解析器的时候，最后用这个解析器包装一次即可。
+
+## 0x04 编写Slime的AST
+
+上一部分，我构造了一个基本的解析器组合子库，接下来针对Slime语言，我们要使用这些解析器来编写它的AST。我们已经了解了AST是什么东西，但是为什么放在这儿编写AST，编写出来的AST到底用在哪儿？
+
+其实答案很简单，接上一部分，若一个解析器能解析`a = 1`这样的语句，那么从上一部分的解析器parser很有可能得到类似`[[a, =], 1]`这样的结果，这种结果我们不知道它具体代表什么，最好呢，能返回类似`Assign(a, 1)`这样的结果。是不是很熟悉？没错，前一种就是描述树，后一种就是语法树。
+
+也就是说若我们手头上有上面那个语法的AST，我们只要使用`parser.do(v => new ast(v))`这样就能将我们的AST结合到语法解析器中。
+
+并且，AST提供了Slime语言在JavaScript环境下运行的能力，因为我们获得了语法树，我们已经知道了这个语句的抽象含义，将它转化为JavaScript语句就不难了。接下来，我们就着手来编写Slime的AST。
+
+为了更好的了解Slime的语法构成，我们需要将它的语法分门别类，有一种特别有效简单的方法，就是BNF表示法，这个表示法能非常好地配合解析器组合子逻辑。
+
+Slime只有一种数据类型就是正整数类型，Slime拥有变量ID。
+
+Slime拥有两种类型的表达式：`AExp`(代数表达式)和`BExp`(布尔表达式)。其中`AExp`包含数字类型和变量的引用以及四则运算：
+
+`AExp`:
+```ruby
+1 # 数字值
+x # 变量值
+1 + 1 # 四则运算
+x + 1 # 包含变量的四则运算
+1 + 1 + x # 复合四则运算
+```
+
+`BExp`:
+```ruby
+1 < 2 # 逻辑判断
+x == 1
+not y # 与或非逻辑
+1 < 2 or 2 < 3
+1 < 2 and 2 < 3
+```
+
+Slime包含一系列`Stmt`语句，这部分语句用来控制程序运行：
+
+```ruby
+x = 1 # 赋值
+x = 1; y = 2 # 复合语句
+# 判断
+if 1 < 2 then
+  x = 2
+else
+  x = 3
+end
+# 循环
+while 1 < 2 do
+  x = x + 1
+end
+```
+
+整个Slime程序其实就是一个巨大的`Stmt`，以及一个全局变量字典`intList{Id}`。
+
+所以，我们可以得到Slime的BNF表示：
+
+```
+<Number> ::= 正整数值
+    <Id> ::= 变量引用
+  <AExp> ::= <Number>
+          |  <Id>
+          |  <AExp> + <AExp>
+          |  <AExp> - <AExp>
+          |  <AExp> * <AExp>
+          |  <AExp> / <AExp>
+  <BExp> ::= <AExp> < <AExp>
+          |  <AExp> > <AExp>
+          |  <AExp> <= <AExp>
+          |  <AExp> >= <AExp>
+          |  <AExp> == <AExp>
+          |  <AExp> != <AExp>
+          |  not <BExp>
+          |  <BExp> and <BExp>
+          |  <BExp> or <BExp>
+  <Stmt> ::= <Id> = <AExp>
+          |  <Stmt>; <Stmt>
+          |  if <BExp> then <Stmt> else <Stmt> end
+          |  while <BExp> do <Stmt> end
+   <Pgm> ::= intList{Id}; Stmt
+```
+
+所以，我们只要按照BNF来构造Slime的AST即可。
+
+#### AExp -- 代数表达式
+
+从BNF表示中，我们可以得知，AExp就3种语法：
+
+```
+<AExp> ::= <Number>
+        |  <Id>
+        |  <AExp> + <AExp>
+        |  <AExp> - <AExp>
+        |  <AExp> * <AExp>
+        |  <AExp> / <AExp>
+```
+
+1. Number，数字
+2. Id，变量引用
+3. 四则运算
+
+所以AExp其实就很简单了，首先，我们来构造Number的AExp：
+
+`examples/slime/ast/aexp/number.js`
+```javascript
+export default class NumberAExp extends AExp {
+  constructor(n) {
+    super();
+    this.number = n;
+  }
+
+  eval() {
+    return this.number;
+  }
+}
+```
+
+从这个最简单的AST入手，我们来解释一下AST的构造，AST的构造器肯定会接收一些东西，每个AST接收的东西不同，可能是数字，可能是变量名，也有可能是其他AST。而`eval()`函数是AST的执行函数，也就是说在这个函数中，我们使用JavaScript来运行这个AST。这个函数将有一个入参，就是`env`，这个入参其实就是一个全局变量字典，每个AST都能改变全局上的变量。
+
+让我们看一下`env`的例子，也就是Id的AExp，这个AExp很简单，就是从全局字典中取出给定的Id名的真实值：
+
+`example/slime/ast/aexp/id.js`
+```javascript
+export default class IdAExp extends AExp {
+  constructor(name) {
+    super();
+    this.name = name;
+  }
+
+  eval(env) {
+    return env[this.name];
+  }
+}
+```
+
+然后就是四则运算的AExp，这个玩意儿稍微复杂一点，其实也很简单，根据BNF，我们知道它的入参肯定是一个运算符和两个其他AExp：
+
+`example/slime/ast/aexp/basicOperation.js`
+```javascript
+export default class BasicOperationAExp extends AExp {
+  constructor(operator, left, right) {
+    super();
+    this.operator = operator;
+    this.left = left;
+    this.right = right;
+  }
+
+  eval(env) {
+    const left = this.left.eval(env);
+    const right = this.right.eval(env);
+    let value;
+    switch (this.operator) {
+      case '+':
+        value = left + right;
+        break;
+      case '-':
+        value = left + right;
+        break;
+      case '*':
+        value = left * right;
+        break;
+      case '/':
+        value = left / right;
+        break;
+      default:
+        throw new Error(`unknown operator: ${this.operator}`);
+    }
+    return value;
+  }
+}
+```
+
+执行的时候，它会先去执行左右两边的AExp，然后再根据操作符来执行本身的四则运算。
+
+至此，Slime的代数表达式类型的语句的AST就构成完毕了，根据BNF表示法，这个步骤轻松又愉悦。
