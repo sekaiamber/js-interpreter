@@ -48,7 +48,7 @@
 
 ## 0x01 Slime语言
 
-我想找一个简答的语言来作为这个项目的第一个实例。所以我搞了一个很简单的语言，它叫做Sllime（史莱姆，RPG游戏中最低级的怪）。
+我想找一个简答的语言来作为这个项目的第一个实例。所以我搞了一个很简单的语言，它叫做Slime（史莱姆，RPG游戏中最低级的怪）。
 
 这个语言是专属于本文的毫无用处的语言，结构十分简单，通过文章描述，可以得知Slime简直就是一种最最基础的编程语言：
 * 拥有顺序、判断、循环3种基本结构
@@ -897,3 +897,229 @@ export default class BasicOperationAExp extends AExp {
 执行的时候，它会先去执行左右两边的AExp，然后再根据操作符来执行本身的四则运算。
 
 至此，Slime的代数表达式类型的语句的AST就构成完毕了，根据BNF表示法，这个步骤轻松又愉悦。
+
+#### BExp -- 布尔表达式
+
+同样，观察BNF之后，我们可以看到Slime的BExp拥有以下几种语法：
+
+```
+<BExp> ::= <AExp> < <AExp>
+        |  <AExp> > <AExp>
+        |  <AExp> <= <AExp>
+        |  <AExp> >= <AExp>
+        |  <AExp> == <AExp>
+        |  <AExp> != <AExp>
+        |  not <BExp>
+        |  <BExp> and <BExp>
+        |  <BExp> or <BExp>
+```
+
+1. 逻辑比较
+2. 非
+3. 与
+4. 或
+
+所以同样，我们依样画葫芦，先来做逻辑比较的BExp：
+
+`examples/slime/ast/bexp/relationalOperation.js`
+```javascript
+export default class RelationalOperationBExp extends BExp {
+  constructor(operator, left, right) {
+    super();
+    this.operator = operator;
+    this.left = left;
+    this.right = right;
+  }
+
+  eval(env) {
+    const left = this.left.eval(env);
+    const right = this.right.eval(env);
+    let value;
+    switch (this.operator) {
+      case '<':
+        value = left < right;
+        break;
+      case '<=':
+        value = left <= right;
+        break;
+      case '>':
+        value = left > right;
+        break;
+      case '>=':
+        value = left >= right;
+        break;
+      case '==':
+        value = left === right;
+        break;
+      case '!=':
+        value = left !== right;
+        break;
+      default:
+        throw new Error(`unknown operator: ${this.operator}`);
+    }
+    return value;
+  }
+}
+```
+
+这个和`BasicOperationAExp`几乎一样，不再赘述。
+
+剩下三个与或非运算也都很简单，就罗列以下：
+
+`examples/slime/ast/bexp/and.js`
+```javascript
+export default class AndBExp extends BExp {
+  constructor(left, right) {
+    super();
+    this.left = left;
+    this.right = right;
+  }
+
+  eval(env) {
+    const left = this.left.eval(env);
+    const right = this.left.eval(env);
+    return left && right;
+  }
+}
+```
+
+`examples/slime/ast/bexp/not.js`
+```javascript
+export default class NotBExp extends BExp {
+  constructor(exp) {
+    super();
+    this.exp = exp;
+  }
+
+  eval(env) {
+    const exp = this.exp.eval(env);
+    return !exp;
+  }
+}
+```
+
+`examples/slime/ast/bexp/or.js`
+```javascript
+export default class OrBExp extends BExp {
+  constructor(left, right) {
+    super();
+    this.left = left;
+    this.right = right;
+  }
+
+  eval(env) {
+    const left = this.left.eval(env);
+    if (left) return true;
+    const right = this.left.eval(env);
+    return left || right;
+  }
+}
+```
+
+#### Stmt -- 声明语法
+
+Stmt部分主要用来控制程序的执行，从BNF我们能得到以下语法：
+
+```
+<Stmt> ::= <Id> = <AExp>
+        |  <Stmt>; <Stmt>
+        |  if <BExp> then <Stmt> else <Stmt> end
+        |  while <BExp> do <Stmt> end
+```
+
+1. 赋值语法
+2. 复合语句语法
+3. 判断结构语法
+4. 循环结构语法
+
+Stmt部分的AST主要是用来控制程序运行，以及串联AExp和BExp的。
+
+首先是赋值语法，很简单：
+
+`examples/slime/ast/stmt/assign.js`
+```javascript
+export default class AssignStmt extends Stmt {
+  constructor(name, aexp) {
+    super();
+    this.name = name;
+    this.aexp = aexp;
+  }
+
+  eval(env) {
+    const value = this.aexp.eval(env);
+    env[this.name] = value;
+    return value;
+  }
+}
+```
+
+执行`eval()`函数时，它将在`env`全局字典中写入一对键值，用来表示变量。
+
+然后是复合语句，它将依次执行左右两条语句：
+
+`examples/slime/ast/stmt/compound.js`
+```javascript
+export default class CompoundStmt extends Stmt {
+  constructor(first, second) {
+    super();
+    this.first = first;
+    this.second = second;
+  }
+
+  eval(env) {
+    this.first.eval(env);
+    const result = this.second.eval(env);
+    return result;
+  }
+}
+```
+
+判断语句也很简单，它接受一个条件，一个当条件为真时执行的语句，以及可选的当条件为假时执行的语句：
+
+`examples/slime/ast/stmt/if.js`
+```javascript
+export default class IfStmt extends Stmt {
+  constructor(condition, trueStmt, falseStmt) {
+    super();
+    this.condition = condition;
+    this.trueStmt = trueStmt;
+    this.falseStmt = falseStmt;
+  }
+
+  eval(env) {
+    const value = this.condition.eval(env);
+    if (value) {
+      return this.trueStmt.eval(env);
+    }
+    if (this.falseStmt) {
+      return this.falseStmt.eval(env);
+    }
+    return undefined;
+  }
+}
+```
+
+循环语句在结构上跟判断语句也极其相似：
+
+`examples/slime/ast/stmt/while.js`
+```javascript
+export default class WhileStmt extends Stmt {
+  constructor(condition, body) {
+    super();
+    this.condition = condition;
+    this.body = body;
+  }
+
+  eval(env) {
+    let value = this.condition.eval(env);
+    let ret;
+    while (value) {
+      ret = this.body.eval(env);
+      value = this.condition.eval(env);
+    }
+    return ret;
+  }
+}
+```
+
+至此，对于Slime这个语言来说，我们已经抽象出了它所有的语法，并且这些AST都能在JavaScript环境下运行了，下一步我们只要使用解析器组合子来构造Slime语言本身的语法解析器，并将Slime的AST接入其中即可。
