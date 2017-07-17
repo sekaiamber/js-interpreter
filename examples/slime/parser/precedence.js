@@ -1,7 +1,7 @@
 import { keyword } from './basic';
 
 /**
- * 是否有操作符在列表中
+ * 获得一个能识别给定所有操作符的解析器
  */
 
 function anyOperatorInList(ops) {

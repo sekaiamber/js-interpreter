@@ -1,6 +1,6 @@
 import Lexer from '../../src/lexer';
 import tokenExprs from './tokenExprs';
-import SlimeParser from './parser';
+import slimeParser from './parser';
 
 /**
  * slime分词器
@@ -18,6 +18,7 @@ class SlimeLexer extends Lexer {
   }
 }
 
+const SlimeParser = slimeParser();
 /**
  * slime解释器
  */
@@ -25,14 +26,14 @@ class SlimeLexer extends Lexer {
 class Slime {
   constructor() {
     this.lexer = new SlimeLexer();
-    this.parse = SlimeParser;
+    this.parser = SlimeParser;
   }
 
   eval(code, env = {}) {
     // 词法分析
     const tokens = this.lexer.lex(code);
     // 语法分析
-    const parseResult = this.parse(tokens);
+    const parseResult = this.parser.parse(tokens, 0);
     const ast = parseResult.value;
     // TODO: 语义分析
     // 执行
@@ -44,6 +45,7 @@ class Slime {
     };
   }
 }
+
 
 export default Slime;
 export {

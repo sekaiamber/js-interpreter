@@ -25,18 +25,11 @@ import { PhraseParser } from '../../../src/combinators';
  * 语句组合解析器，这个解析器要求代码完整性，作为程序的入口
  */
 
-function slimePhrase() {
+function slimeParser() {
   return new PhraseParser(stmtList());
 }
 
-/**
- * Slime程序解析器
- */
-function SlimeParser(tokens) {
-  return slimePhrase().parse(tokens, 0);
-}
-
-export default SlimeParser;
+export default slimeParser;
 export {
   keyword,
   number,
@@ -54,5 +47,4 @@ export {
   stmtIf,
   stmtList,
   stmtWhile,
-  slimePhrase,
 };
