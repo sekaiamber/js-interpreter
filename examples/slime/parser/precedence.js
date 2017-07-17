@@ -16,8 +16,8 @@ function anyOperatorInList(ops) {
 
 function precedence(valueParser, precedenceLevels, combine) {
   const opParser = precedenceLevel => anyOperatorInList(precedenceLevel).do(combine);
-  let parser = valueParser.join(opParser(precedenceLevels[0]));
-  for (let i = 1; i < precedenceLevels.length; i += 1) {
+  let parser = valueParser;
+  for (let i = 0; i < precedenceLevels.length; i += 1) {
     parser = parser.join(opParser(precedenceLevels[i]));
   }
   return parser;
