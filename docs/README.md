@@ -56,7 +56,7 @@
 * 全部变量，没有作用域
 * 只有整形，没有其他类型
 
-Slime的语法例子如下，很像`ruby`的语法：
+Slime的语法例子如下：
 
 ```ruby
 1 # 数字值
@@ -71,17 +71,17 @@ not y # 与或非逻辑
 1 < 2 or 2 < 3
 1 < 2 and 2 < 3
 
-x = 1 # 赋值
-x = 1; y = 2 # 复合语句
+x = 1; # 赋值
+x = 1; y = 2; # 复合语句
 # 判断
 if 1 < 2 then
-  x = 2
+  x = 2;
 else
-  x = 3
+  x = 3;
 end
 # 循环
 while 1 < 2 do
-  x = x + 1
+  x = x + 1;
 end
 ```
 
@@ -329,7 +329,7 @@ export default class Result {
 
 连接解析器(`parser.concat`)的作用是，接受两个解析器，将它们连接起来。
 
-举个栗子，假设我们有关键字解析器，能解析`+`这个关键字字符，又有常量解析器，能解析`1`或者`2`这样的常量。那么若是要解析`1 + 2`这样的常量加法语句，就可以用`常量解析器.concat(关键字解析器(+)).concat(常量解析器)`来获得这个变量赋值语句的解析器。
+举个栗子，假设我们有关键字解析器，能解析`+`这个关键字字符，又有常量解析器，能解析`1`或者`2`这样的常量。那么若是要解析`1 + 2`这样的常量加法语句，就可以用`常量解析器.concat(关键字解析器(+)).concat(常量解析器)`来获得这个常量加法语句的解析器。
 
 所以它很简单，实例化的时候接收左右两个解析器，解析的时候先执行左边的解析器，再执行右边的解析器：
 
@@ -761,17 +761,17 @@ not y # 与或非逻辑
 Slime包含一系列`Stmt`语句，这部分语句用来控制程序运行：
 
 ```ruby
-x = 1 # 赋值
-x = 1; y = 2 # 复合语句
+x = 1; # 赋值
+x = 1; y = 2; # 复合语句
 # 判断
 if 1 < 2 then
-  x = 2
+  x = 2;
 else
-  x = 3
+  x = 3;
 end
 # 循环
 while 1 < 2 do
-  x = x + 1
+  x = x + 1;
 end
 ```
 
@@ -878,7 +878,7 @@ export default class BasicOperationAExp extends AExp {
         value = left + right;
         break;
       case '-':
-        value = left + right;
+        value = left - right;
         break;
       case '*':
         value = left * right;
@@ -1123,3 +1123,519 @@ export default class WhileStmt extends Stmt {
 ```
 
 至此，对于Slime这个语言来说，我们已经抽象出了它所有的语法，并且这些AST都能在JavaScript环境下运行了，下一步我们只要使用解析器组合子来构造Slime语言本身的语法解析器，并将Slime的AST接入其中即可。
+
+## 0x04 编写Slime的语法解析器
+
+上一部分，我们已经实现了Slime的AST，这部分我们将使用0x02编写的组合子库来组合出我们所需要的各个语法解析器，再将它们结合0x03的AST使得每个语法可以运行，最后将各个解析器连接起来，最终产生的就是Slime这个语言的解析器了。
+
+我们仍然通过BNF表示的语法类型来各个击破。
+
+在此之前，我们要做一些额外的工作来建立一些最最基础的解析器：
+
+```javascript
+/**
+ * 关键字解析器
+ */
+function keyword(name) {
+  return new ReservedParser(name, RESERVED);
+}
+
+/**
+ * 数字型解析器
+ */
+const number = new TagParser(NUMBER).do(i => parseInt(i, 10));
+
+/**
+ * 变量解析器
+ */
+const id = new TagParser(ID);
+```
+
+我们分别对`keyword`、`number`、`id`进行了包装，使得后面使用更加方便。
+
+#### AExp解析器
+
+我们仍然从AExp入手，从上一部分我们得知，AExp主要是3种语法，我们复习一下：
+
+1. Number，数字
+2. Id，变量引用
+3. 四则运算
+
+前2种语法，其实可以被`or`连用，所以我们先来做这部分：
+
+`examples/slime/parser/aexp.js`
+```javascript
+/**
+ * 获取AExp的实际值
+ */
+function aexpValue() {
+  return number.do(i => new NumberAExp(i)).or(id.do(v => new IdAExp(v)));
+}
+```
+
+从这个最简单的逻辑出发，让我们来理解一下Slime的解析器的构造。这里已经不会再采用类的方式构成解析器了，直接调用函数会更加方便一点。`number`解析器能将到代码`"1"`解析为数字`1`，然后我们将数字`1`转而包装成上一部分编写的`NumberAExp`这个AST用于执行。同理将id包装为`IdAExp`。并用`or`来连接两个解析器，这样这个`aexpValue`产生的解析器能解析任意的数字和变量，并能在执行AST的时候正确的从全局字典中获得真实值。
+
+接着我们来处理比较麻烦的四则运算部分，这一部分相对之前所有的内容来的更加复杂。
+
+四则运算可以包含AExp本身，所以这儿我们肯定会用到`LazyParser`，而且让我们首先定义一下，假设最终我们有个函数`aexp`生成的解析器能解析所有的AExp语法，所以四则运算的解析器内部，需要用`LazyParser`来处理这个`aexp`。
+
+首先我们要处理的是括号表达式的问题，事实上对于语法树来说，括号是没有作用的，因为所有的运算优先级都表示在树上了，所以我们需要一个解析器，能匹配到括号表达式，并正确返回其中的内容：
+
+`examples/slime/parser/aexp.js`
+```javascript
+/**
+ * 括号表达式提值函数
+ */
+function _processGroup(parsed) {
+  // 这里的数据大概长得类似 [['(', value], ')']，我们要提出这个value
+  return parsed[0][1];
+}
+
+/**
+ * 解析括号表达式
+ */
+function aexpGroup() {
+  return keyword('(').concat(new LazyParser(aexp)).concat(keyword(')')).do(_processGroup);
+}
+```
+
+接下来，我们用`aexpTerm`来连接上面两者，想象一下，所有的独立的AExp代数表达式的项，无外乎上面两种情况。
+
+`examples/slime/parser/aexp.js`
+```javascript
+/**
+ * AExp表达式项
+ */
+function aexpTerm() {
+  return aexpValue().or(aexpGroup());
+}
+```
+
+下面让我们来处理这个最最棘手的`aexp`，造成这个棘手的元凶，就是运算优先级，若我们直接将`aexpTerm`当做`aexp`使用，那么会造成将`1 + 2 * 3`当做`(1 + 2) * 3`去执行。如何让解析器感知运算优先级，这是个很麻烦的事情。
+
+幸好，我们有`ExpressionParser`，这是一种很反常识的用法。让我们来仔细看一下`aexp`的代码：
+
+`examples/slime/parser/aexp.js`
+```javascript
+/**
+ * 算数表达式优先级
+ */
+const _aexpPrecedenceLevels = [
+  ['*', '/'],
+  ['+', '-'],
+];
+
+function _processBasicOperation(op) {
+  return (l, r) => new BasicOperationAExp(op, l, r);
+}
+
+/**
+ * AExp表达式
+ */
+function aexp() {
+  return precedence(aexpTerm(), _aexpPrecedenceLevels, _processBasicOperation);
+}
+```
+
+我们定义了一个`_processBasicOperation`来作为最终接入AST的函数，这部分很好理解，然后我们定义了`_aexpPrecedenceLevels`来决定运算符优先级，这个在形式上也很好理解，然后关键是`precedence`这个函数，通过这个我们结合了AExp的独立解析器`aexpTerm`和刚刚提到的两个东西。让我们看看这个函数是怎么工作的。
+
+其实解决运算优先级的做法，跟解决复合语句类似，首先我们要解决任意乘除运算的解析器`p1`，那么这个解析器就是这样：
+
+```javascript
+const p1 = aexpTerm().join(keyword('*').or(keyword('/')).do(_processBasicOperation))
+```
+
+这个解析器的意思所有AExp的独立项被乘除运算符分割，也就是说类似下面的语句，都可以被这个解析器解析：
+
+* `1 * 2`
+* `1 * 2 / 3`
+* `1 * 2 * (其他带括号的代数数表达式)`
+
+到这里为止，是十分符合常识的，于是我们可以依样画葫芦，搞出加减运算解析器：
+
+```javascript
+const p2 = aexpTerm().join(keyword('+').or(keyword('-')).do(_processBasicOperation))
+```
+
+上面的`p2`就是一个加减运算解析器，我们只需要略作修改就可以使得乘除运算结合进去：
+
+```javascript
+const p2 = p1.join(keyword('+').or(keyword('-')).do(_processBasicOperation))
+```
+
+是不是很神奇？我们将`p1`作为`ExpressionParser`的内容解析器，就可以使得解析器先优先解析和执行乘除运算，再解析和执行加减运算，从而解决运算优先级的问题。
+
+让我们来看个实际的例子，来解释上面的`p2`是如何解析一个复杂的四则运算的，我们先定义`p0`就是`aexpTerm`，这样比较直观：
+
+```
+1 * a + 2 - 3 + b / 4 - (5 + c)
+```
+
+这么个算式，若用上面的`p2`去解析，其实是依次经过`p0`和`p1`的：
+
+```javascript
+1 * a + 2 - 3 + b / 4 - (5 + c)
+// 第一步首先使用aexpTerm去解析每个算数表达式独立项的值，注意最后一个项是一个括号表达式，它也是属于独立的项
+p0(1) * p0(a) + p0(2) - p0(3) + p0(b) / p0(4) - p0(5 + c)
+// 第二步使用乘除解析器去解析每个项，注意，若项没有被乘除分割，则直接返回本身
+p1(1 * a) + p1(2) - p1(3) + p1(b / 4) - p1(5 + c)
+// 第三步使用加减解析器去解析剩余的项，我特意加上了括号更加明显
+p2((1 * a) + (2) - (3) + (b / 4) - ((5 + c)))
+```
+
+这样，使用`ExpressionParser`即可解决运算优先级的问题，继而包装一下上文提到的`precedence`函数，我们就可以解决任意数量的运算符优先级问题了：
+
+`examples/slime/parser/precedence.js`
+```javascript
+/**
+ * 获得一个能识别给定所有操作符的解析器
+ */
+function anyOperatorInList(ops) {
+  const opParsers = ops.map(op => keyword(op));
+  const parser = opParsers.reduce((l, r) => l.or(r));
+  return parser;
+}
+
+/**
+ * 优先级处理函数
+ */
+function precedence(valueParser, precedenceLevels, combine) {
+  const opParser = precedenceLevel => anyOperatorInList(precedenceLevel).do(combine);
+  let parser = valueParser;
+  for (let i = 0; i < precedenceLevels.length; i += 1) {
+    parser = parser.join(opParser(precedenceLevels[i]));
+  }
+  return parser;
+}
+```
+
+至此，运算优先级的问题也解决了，我们的`aexp`大功告成，使用这个解析器，我们能识别和执行一切Slime的代数表达式了。
+
+#### BExp解析器
+
+BExp解析器和AExp解析器结构十分类似，也就是依样画葫芦的情况，先复习一下BExp的语法类型：
+
+1. 逻辑比较
+2. 非
+3. 与
+4. 或
+
+一个一个来，逻辑运算，很简单，根据BNF表示，逻辑运算的结构为：`<BExp> ::= <AExp> < <AExp>`，也就是说中间一个运算符，左右各一个`aexp`，所以就很简单：
+
+`examples/slime/parser/bexp.js`
+```javascript
+const _relops = ['<', '<=', '>', '>=', '==', '!='];
+
+/**
+ * 布尔表达式转化AST
+ */
+function _processRelop(parsed) {
+  // [[left, op], right]
+  return new RelationalOperationBExp(parsed[0][1], parsed[0][0], parsed[1]);
+}
+
+/**
+ * AExp布尔表达式解析器
+ */
+function bexpRelationalOperation() {
+  // 中间一个运算符解析器，能解析所有_relops的符号，左右各一个aexp，最后转化为AST
+  return aexp().concat(anyOperatorInList(_relops)).concat(aexp()).do(_processRelop);
+}
+```
+
+然后来处理括号表达式，跟AExp的情况一模一样，我们也假设了`bexp`能解析一切BExp语法：
+
+`examples/slime/parser/bexp.js`
+```javascript
+/**
+ * 布尔表达式提值函数
+ */
+function _processGroup(parsed) {
+  return parsed[0][1];
+}
+
+/**
+ * 布尔括号表达式
+ */
+function bexpGroup() {
+  return keyword('(').concat(new LazyParser(bexp)).concat(keyword(')')).do(_processGroup);
+}
+```
+
+至此，逻辑运算的部分解析就搞定了。
+
+然后是逻辑非运算，BNF表示为：`not <BExp>`，关键字后面跟一个BExp，它包含了BExp本身，所以肯定要用到`LazyParser`：
+
+`examples/slime/parser/bexp.js`
+```javascript
+/**
+ * 布尔否表达式
+ */
+function bexpNot() {
+  return keyword('not').concat(new LazyParser(bexpTerm)).do(parsed => new NotBExp(parsed[1]));
+}
+```
+
+同AExp，我们再来定义布尔表达式独立项，这个项可能是逻辑比较运算，可能是括号表达式，也可能是逻辑非运算，这些项可以参与到`and`和`or`运算中：
+
+`examples/slime/parser/bexp.js`
+```javascript
+/**
+ * 布尔表达式项
+ */
+function bexpTerm() {
+  return bexpNot().or(bexpRelationalOperation()).or(bexpGroup());
+}
+```
+
+最后，还是运算优先级问题，我们知道`and`的优先级一般是高于`or`的，所以使用AExp那一套就很简单可以构造`bexp`：
+
+`examples/slime/parser/bexp.js`
+```javascript
+/**
+ * 布尔表达式优先级
+ */
+const _bexpPrecedenceLevels = [
+  ['and'],
+  ['or'],
+];
+
+function _processLogic(op) {
+  if (op === 'and') {
+    return (l, r) => new AndBExp(l, r);
+  } else if (op === 'or') {
+    return (l, r) => new OrBExp(l, r);
+  }
+  throw new Error('unknown logic operator: ' + op);
+}
+
+/**
+ * BExp表达式
+ */
+function bexp() {
+  return precedence(bexpTerm(), _bexpPrecedenceLevels, _processLogic);
+}
+```
+
+所以，理解了AExp那一套，BExp也就很容易编写出来了。
+
+#### Stmt解析器
+
+Stmt其实跟上面两者套路一样，先复习一下语法类型：
+
+1. 赋值语法
+2. 复合语句语法
+3. 判断结构语法
+4. 循环结构语法
+
+先来搞定赋值语句，还是老套路，看BNF表示的结构：`<Id> = <AExp>`，很清晰，一个`id`解析器，跟一个`=`关键字，再跟上`AExp`：
+
+`examples/slime/parser/stmt.js`
+```javascript
+// 赋值语句AST
+function _processAssign(parsed) {
+  // [[name, _], exp]
+  return new AssignStmt(parsed[0][0], parsed[1]);
+}
+
+/**
+ * 赋值语句
+ */
+function stmtAssign() {
+  return id.concat(keyword('=')).concat(aexp()).do(_processAssign);
+}
+```
+
+复合语句也很简单，我们也假设一个`stmt`能解析一切Stmt语法，复合语句的BNF是：`<Stmt>; <Stmt>`，就是以`;`为分割的`stmt`，这儿为了保持语法的一致，所以我们在复合语句的最后边加上一个可有可无的`;`做结尾：
+
+`examples/slime/parser/stmt.js`
+```javascript
+/**
+ * 语句列表
+ */
+function stmtList() {
+  const separator = keyword(';').do(() => (l, r) => new CompoundStmt(l, r));
+  return new ExpressionParser(stmt(), separator).concat(new OptionParser(keyword(';'))).do(parsed => parsed[0]);
+}
+```
+
+然后是判断语句，判断语句可能有`else`部分，也可能没有，这时候就需要用到`OptionParser`了，他的BNF为`if <BExp> then <Stmt> else <Stmt> end`：
+
+`examples/slime/parser/stmt.js`
+```javascript
+/**
+ * 获得判断语句AST
+ */
+function _processIf(parsed) {
+  // [[[[[_, condition], _], true_stmt], false_parsed], _]
+  const condition = parsed[0][0][0][0][1];
+  const trueStmt = parsed[0][0][1];
+  let falseStmt = parsed[0][1];
+  if (falseStmt) {
+    falseStmt = falseStmt[1];
+  }
+  return new IfStmt(condition, trueStmt, falseStmt);
+}
+
+/**
+ * 判断语句
+ */
+function stmtIf() {
+  // 这里就体现了链式调用的优越性
+  return (
+    keyword('if')
+    .concat(bexp())
+    .concat(keyword('then'))
+    .concat(new LazyParser(stmtList))
+    .concat(new OptionParser(
+      keyword('else')
+      .concat(new LazyParser(stmtList))
+    ))
+    .concat(keyword('end'))
+    .do(_processIf)
+  );
+}
+```
+
+最后是循环语句，
+
+`examples/slime/parser/stmt.js`
+```javascript
+/**
+ * 循环语句AST
+ */
+function _processWhile(parsed) {
+  // [[[[_, condition], _], body], _]
+  return new WhileStmt(parsed[0][0][0][1], parsed[0][1]);
+}
+
+/**
+ * 循环语句
+ */
+function stmtWhile() {
+  return (
+    keyword('while')
+    .concat(bexp())
+    .concat(keyword('do'))
+    .concat(new LazyParser(stmtList))
+    .concat(keyword('end'))
+    .do(_processWhile)
+  );
+}
+```
+
+将上述的所有解析器用`or`连接，就可以构成`stmt`解析器了：
+
+`examples/slime/parser/stmt.js`
+```javascript
+/**
+ * stmt解析器
+ */
+function stmt() {
+  return stmtAssign().or(stmtIf()).or(stmtWhile());
+}
+```
+
+这样，整个Stmt解析器就完成了。
+
+#### Slime解析器
+
+我们将3种类型的解析器已经全部构成，细心的同学已经发现了，Stmt解析器中已经将AExp解析器和BExp的解析器连接了进来，而BExp解析器中也连接了AExp解析器，这就是根据BNF表示和组合子逻辑来构建解析器的好处，它们两者使得语法的推导十分自然和简单。
+
+然后我们通过那个`PhraseParser`来包装整个Slime解析器：
+
+`examples/slime/parser/index.js`
+```javascript
+/**
+ * 语句组合解析器，这个解析器要求代码完整性，作为程序的入口
+ */
+function slimeParser() {
+  return new PhraseParser(stmtList());
+}
+```
+
+这里注意一下，我们没有使用`stmt`来当做整个Slime的解析器，转而使用了`stmtList`，其实`stmtList`代表的复合语句已经包含了普通的语句。
+
+到这里为止，整个Slime语言的语法解析器就已经完成了。
+
+## 0x05 Slime解释器
+
+我们要在这一部分将上面的所有工作结合起来，很简单：
+
+```javascript
+/**
+ * slime分词器
+ */
+class SlimeLexer extends Lexer {
+  constructor() {
+    super();
+    this._addTokenExpression = this.addTokenExpression;
+    this.addTokenExpression = undefined;
+    for (let i = 0; i < tokenExprs.length; i += 1) {
+      const tokenExpr = tokenExprs[i];
+      this._addTokenExpression(tokenExpr[0], tokenExpr[1]);
+    }
+  }
+}
+
+const SlimeParser = slimeParser();
+/**
+ * slime解释器
+ */
+class Slime {
+  constructor() {
+    this.lexer = new SlimeLexer();
+    this.parser = SlimeParser;
+  }
+
+  eval(code, env = {}) {
+    // 词法分析
+    const tokens = this.lexer.lex(code);
+    // 语法分析
+    const parseResult = this.parser.parse(tokens, 0);
+    const ast = parseResult.value;
+    // TODO: 语义分析
+    // 执行
+    const result = ast.eval(env);
+    return {
+      _tokens: tokens,
+      result,
+      env,
+    };
+  }
+}
+```
+
+运行`slime.eval`会返回如下的结构：
+
+```javascript
+result = {
+  _tokens: [ ... ], // token列表
+  result: ..., // 整个程序运行的结果，一般是最后一个有值语句的值
+  env: { ... }, // 大环境，包括所有变量
+}
+```
+
+只要我们实例化一个`Slime`，然后执行`eval`并将代码字符串和大环境传入即可执行：
+
+`test/slime/slime.js`
+```javascript
+const code = `n = 5;
+p = 1;
+while n > 0 do
+  p = p * n;
+  n = n - 1;
+end`;
+
+// ...
+
+it('slime', (done) => {
+  const slime = new Slime();
+  const result = slime.eval(code);
+  const env = result.env;
+  expect(env.n).to.equal(0);
+  expect(env.p).to.equal(120);
+  done();
+});
+```
+
