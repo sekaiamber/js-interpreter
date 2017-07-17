@@ -72,7 +72,7 @@ describe('Combinators test', () => {
     const parser = new RepeatParser(new TagParser(ID));
     const result = parser.parse(token, 0);
     expect(result.value.length).to.equal(3);
-    expect(result.pos).to.equal(0);
+    expect(result.pos).to.equal(token.length);
     done();
   });
 
