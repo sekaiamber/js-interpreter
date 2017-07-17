@@ -241,7 +241,7 @@ describe('Slime parser test', () => {
 
   it('slime program parser', (done) => {
     const tokens = lexer.lex('a = 1; b = 2');
-    const result = SlimeParser(tokens);
+    const result = SlimeParser().parse(tokens, 0);
     const expectResult = new CompoundStmt(
       new AssignStmt('a', new NumberAExp(1)),
       new AssignStmt('b', new NumberAExp(2)),

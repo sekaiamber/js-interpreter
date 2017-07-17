@@ -44,7 +44,7 @@ function _processWhile(parsed) {
 
 function stmtList() {
   const separator = keyword(';').do(() => (l, r) => new CompoundStmt(l, r));
-  return new ExpressionParser(stmt(), separator);
+  return new ExpressionParser(stmt(), separator).concat(new OptionParser(keyword(';'))).do(parsed => parsed[0]);
 }
 
 /**

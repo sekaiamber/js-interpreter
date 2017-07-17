@@ -1,7 +1,7 @@
 import { keyword } from './basic';
 
 /**
- * 是否有操作符在列表中
+ * 获得一个能识别给定所有操作符的解析器
  */
 
 function anyOperatorInList(ops) {
@@ -16,8 +16,8 @@ function anyOperatorInList(ops) {
 
 function precedence(valueParser, precedenceLevels, combine) {
   const opParser = precedenceLevel => anyOperatorInList(precedenceLevel).do(combine);
-  let parser = valueParser.join(opParser(precedenceLevels[0]));
-  for (let i = 1; i < precedenceLevels.length; i += 1) {
+  let parser = valueParser;
+  for (let i = 0; i < precedenceLevels.length; i += 1) {
     parser = parser.join(opParser(precedenceLevels[i]));
   }
   return parser;

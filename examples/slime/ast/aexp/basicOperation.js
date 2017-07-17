@@ -21,7 +21,7 @@ export default class BasicOperationAExp extends AExp {
         value = left + right;
         break;
       case '-':
-        value = left + right;
+        value = left - right;
         break;
       case '*':
         value = left * right;

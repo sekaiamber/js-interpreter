@@ -21,6 +21,6 @@ export default class RepeatParser extends Parser {
       resultPos = result.pos;
       result = this.parser.parse(tokens, resultPos);
     }
-    return new Result(results, pos);
+    return new Result(results, resultPos);
   }
 }
