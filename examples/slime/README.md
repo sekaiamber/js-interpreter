@@ -1,6 +1,7 @@
 # Slime 语言解释器实现
 
 *注：这里都从本项目的根目录开始。*
+**在线测试在[这里](https://sekaiamber.github.io/js-interpreter/pages_dist/slime.html)**
 
 解释执行分为4个阶段：
 
