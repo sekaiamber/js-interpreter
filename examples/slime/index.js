@@ -34,6 +34,9 @@ class Slime {
     const tokens = this.lexer.lex(code);
     // 语法分析
     const parseResult = this.parser.parse(tokens, 0);
+    if (!parseResult) {
+      throw new Error('Parse error!');
+    }
     const ast = parseResult.value;
     // TODO: 语义分析
     // 执行
