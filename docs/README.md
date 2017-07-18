@@ -1,8 +1,10 @@
 # 使用JavaScript编写解释器
 
-在各个编程领域中，逼格比较高的，大概就有编写编译器和解释器了。当我们听说一个人“曾用XXX编写过XXX的解释器”这样的话语时，基本上已经认同了那个人大神的实力。
+在各个编程领域中，逼格比较高的，大概就有编写编译器和解释器了。
 
 纵然，编写某种复杂编程语言的解释器是一件浩大的工程，然而事实上，编写一些相对简单的语言或者定制自己的语言时，这种解释器并没有想象中的那么复杂，在这篇文章里，我不会讲述那些生涩的数学公式和绕人的底层原理，只是通过实现一个最最简单可用的解释器来展示解释器是如何工作的。
+
+编写解释器是一件十分有趣惬意的事情，你将摸索到你的代码是一步一步变成计算机可以识别的内容，并优雅地被运行。
 
 本项目的代码选择使用JavaScript实现，不仅因为她十分容易理解，也因为她在浏览器端也能执行。
 
@@ -272,7 +274,7 @@ console.log(tokens);
 
 从下文开始，为了方便描述，我将对所有的基础组合子、复杂组合子以及由这些组合子产生的新的解析器，统称为解析器。
 
-先做基础解析器，也是因为组合子逻辑跟实际语法无关，基础的解析器可以用到任何语言上。
+先做基础解析器，也是因为组合子逻辑跟实际语法无关，也就是所谓的**上下文无关**，基础的解析器可以用来编写任何语言的语法解析器。
 
 ### 基础解析器
 
@@ -411,7 +413,7 @@ function (parsed) {
 }
 ```
 
-这样，我们就能将结果从`[[1, +], 2]`变成`3`，整个AST产生之后，就是以处理器来计算整个AST获得最终结果。
+这样，我们就能将结果从`[[1, +], 2]`变成`3`，实际情况中，解析器就是以类似的处理器来获得对应的AST，并计算整个AST获得最终结果。
 
 `src/combinators/parser.js`
 ```javascript
@@ -439,7 +441,7 @@ class ProcessParser extends Parser {
 }
 ```
 
-处理器的本质是包装一个解析器变成一个新的解析器，它匹配的语句跟原本的解析器完全一样，只不过输出的东西是经过处理函数包装的。
+处理器的看起来就是一个解析器变成一个新的解析器，它匹配的语句跟原本的解析器完全一样，只不过输出的东西是经过处理函数处理的。
 
 #### ExpressionParser -- 复合表达式解析器
 
@@ -453,7 +455,7 @@ class ProcessParser extends Parser {
 
 这里可以看到，在实例化的时候，`compoundStmt`将一直调用构造器，直到栈溢出。这种情况，从实质上来看，就是这种语法以某种语法元素开头，这种语法元素，本身或者经过推断就是语法本身，在编译原理中被称为[左递归](https://en.wikipedia.org/wiki/Left_recursion)，所有的自左向右自顶向下分析的语法分析器，都要避免这种情况。
 
-这儿我们提出的方案，是使用分割的形式来解决这方面的需求。所以它对应到`parser.join`，它接受两个解析器，第一个是内容解析器，用来匹配内容，第二个是分割解析器，用来匹配分割符或者分割语法。运行的逻辑是首先用内容解析器去匹配，若得到结果就使用分割解析器去匹配分隔语法，如此循环。分割解析器需要返回一个处理函数，用来从左到右依次处理内容解析器匹配到的内容，这个过程也是累加的过程。
+这儿我们提出的方案，是使用分割的形式来解决这方面的需求。所以它对应到`parser.join`，它接受两个解析器，第一个是内容解析器，用来匹配内容，第二个是分割解析器，用来匹配分割符或者分割语法。运行的逻辑是首先用内容解析器去匹配，若得到结果就使用分割解析器去匹配分隔语法，如此循环。分割解析器需要返回一个处理函数，用来从左到右依次处理内容解析器匹配到的内容，这个过程也是逐个处理的过程。
 
 `src/combinators/parser.js`
 ```javascript
@@ -472,7 +474,7 @@ class ExpressionParser extends Parser {
   parse(tokens, pos) {
     let result = this.parser.parse(tokens, pos);
     const nextFactory = (parsed) => {
-      // 这个函数就是separator产生的处理函数
+      // 这个sepfunc函数就是separator产生的处理函数
       const sepfunc = parsed[0];
       const right = parsed[1];
       return sepfunc(result.value, right);
@@ -574,7 +576,7 @@ const parser = new ReservedParser('(', RESERVED)
   .concat(new ReservedParser(')', RESERVED))
 ```
 
-上面那个毫无作用的parser能解析`(1)`或者`(999)`这样的语法。
+上面这个毫无作用的parser能解析`(1)`或者`(999)`这样的语法。
 
 #### TagParser -- 标记解析器
 
@@ -660,13 +662,13 @@ export default class RepeatParser extends Parser {
       resultPos = result.pos;
       result = this.parser.parse(tokens, resultPos);
     }
-    return new Result(results, pos);
+    return new Result(results, resultPos);
   }
 ```
 
 #### LazyParser -- 惰性解析器
 
-这个解析器应该算是除了`ExpressionParser`外最难理解的解析器了。他接收一个输出解析器实例的函数，用来在解析时当场生成解析器。这是因为有些语法可能包含自身，比如算数表达式的也可能包含另一个算术表达式。那么这种递归情况就需要用当场生成解析器解析器来解决。
+这个解析器应该算是除了`ExpressionParser`外最难理解的解析器了。他接收一个生成解析器实例的函数，并且在整个解析器解析时当场生成解析器来解析。这是因为有些语法可能包含自身，比如算数表达式的也可能包含另一个算术表达式。那么这种递归情况就需要用当场生成解析器解析器来解决。
 
 `src/combinators/lazyParser.js`
 ```javascript
@@ -734,11 +736,11 @@ export default class PhraseParser extends Parser {
 
 并且，AST提供了Slime语言在JavaScript环境下运行的能力，因为我们获得了语法树，我们已经知道了这个语句的抽象含义，将它转化为JavaScript语句就不难了。接下来，我们就着手来编写Slime的AST。
 
-为了更好的了解Slime的语法构成，我们需要将它的语法分门别类，有一种特别有效简单的方法，就是BNF表示法，这个表示法能非常好地配合解析器组合子逻辑。
+为了更好的了解Slime的语法构成，我们需要将它的语法分门别类，有一种特别有效简单的方法，就是[BNF表示法](https://en.wikipedia.org/wiki/Backus%E2%80%93Naur_form)，这个表示法能非常好地配合解析器组合子逻辑。
 
 Slime只有一种数据类型就是正整数类型，Slime拥有变量ID。
 
-Slime拥有两种类型的表达式：`AExp`(代数表达式)和`BExp`(布尔表达式)。其中`AExp`包含数字类型和变量的引用以及四则运算：
+Slime拥有两种类型的表达式：`AExp`(Algebraic expression，代数表达式)和`BExp`(Boolean expression，布尔表达式)。其中`AExp`包含数字类型和变量的引用以及四则运算：
 
 `AExp`:
 ```ruby
@@ -841,7 +843,7 @@ export default class NumberAExp extends AExp {
 
 从这个最简单的AST入手，我们来解释一下AST的构造，AST的构造器肯定会接收一些东西，每个AST接收的东西不同，可能是数字，可能是变量名，也有可能是其他AST。而`eval()`函数是AST的执行函数，也就是说在这个函数中，我们使用JavaScript来运行这个AST。这个函数将有一个入参，就是`env`，这个入参其实就是一个全局变量字典，每个AST都能改变全局上的变量。
 
-让我们看一下`env`的例子，也就是Id的AExp，这个AExp很简单，就是从全局字典中取出给定的Id名的真实值：
+让我们看一下使用`env`的例子，也就是Id的AExp，这个AExp很简单，就是从全局字典中取出给定的Id名的真实值：
 
 `example/slime/ast/aexp/id.js`
 ```javascript
@@ -857,7 +859,9 @@ export default class IdAExp extends AExp {
 }
 ```
 
-然后就是四则运算的AExp，这个玩意儿稍微复杂一点，其实也很简单，根据BNF，我们知道它的入参肯定是一个运算符和两个其他AExp：
+将环境传入eval函数有个好处，那就是为日后定制代码执行的作用域打好基础。想象一下，若我们不想要循环内部申明的变量在循环外被访问到，就可以在循环的AST中，将新的env传入里面的语句运行即可。
+
+然后就是四则运算的AExp，这个玩意儿稍微复杂一点，其实也很简单，根据BNF`<AExp> + <AExp>`，我们知道它的入参肯定是一个运算符和两个其他AExp：
 
 `example/slime/ast/aexp/basicOperation.js`
 ```javascript
