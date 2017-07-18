@@ -37,9 +37,9 @@ const tokens = new SlimeLexer.lex(code);
 ## 语法分析
 
 ```javascript
-import { slimeParser } from './examples/slime';
+import { SlimeParser } from './examples/slime';
 
-const parseResult = slimeParser(tokens);
+const parseResult = SlimeParser.parse(tokens, 0);
 ```
 
 ## 语义分析
@@ -49,9 +49,9 @@ const parseResult = slimeParser(tokens);
 ## 执行
 
 ```javascript
-import { slimeParser } from './examples/slime';
+import { SlimeParser } from './examples/slime';
 
-const parseResult = slimeParser(tokens);
+const parseResult = SlimeParser.parse(tokens, 0);
 const ast = parseResult.value;
 const env = { ... }; // 设置全局环境
 const result = ast.eval(env);
