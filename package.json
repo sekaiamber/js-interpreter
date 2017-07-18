@@ -4,6 +4,8 @@
   "description": "This is a DSL interpreter using JavaScript",
   "main": "lib/index.js",
   "scripts": {
+    "dev": "webpack-dev-server --progress --colors --display-error-details --inline --hot --content-base root/build --config webpack/webpack.dev.config.js",
+    "deploy": "NODE_ENV=production webpack -p --display-error-details --config webpack/webpack.deploy.config.js",
     "test": "webpack --config webpack/webpack.test.config.js --display-error-details"
   },
   "repository": {
@@ -21,6 +23,7 @@
   },
   "homepage": "https://github.com/sekaiamber/js-interpreter#readme",
   "devDependencies": {
+    "autoprefixer-loader": "^3.2.0",
     "babel-cli": "^6.24.1",
     "babel-core": "^6.6.0",
     "babel-eslint": "^7.0.0",
@@ -34,6 +37,7 @@
     "babel-preset-react": "^6.5.0",
     "babel-preset-react-hmre": "^1.1.1",
     "chai": "^3.5.0",
+    "css-loader": "^0.23.1",
     "eslint": "^3.7.1",
     "eslint-config-airbnb": "12.0.0",
     "eslint-loader": "^1.5.0",
@@ -41,8 +45,18 @@
     "eslint-plugin-import": "1.16.0",
     "eslint-plugin-jsx-a11y": "2.2.2",
     "eslint-plugin-react": "6.8.0",
+    "extract-text-webpack-plugin": "^1.0.1",
+    "html-webpack-plugin": "^2.12.0",
+    "img-loader": "^1.2.2",
+    "json-loader": "^0.5.4",
     "mocha": "^3.4.1",
+    "node-sass": "^4.5.3",
+    "redbox-react": "^1.2.2",
+    "sass-loader": "^3.1.2",
+    "style-loader": "^0.13.0",
+    "url-loader": "^0.5.7",
     "webpack": "^1.12.14",
+    "webpack-dev-server": "^1.14.1",
     "webpack-node-externals": "^1.5.4",
     "webpack-shell-plugin": "^0.5.0"
   }

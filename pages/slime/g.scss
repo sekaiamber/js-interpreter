@@ -1,0 +1,44 @@
+#main {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+#input {
+  position: relative;
+
+  #opts {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+  }
+}
+
+#output {
+  display: flex;
+}
+
+#slime {
+  height: 100%;
+
+  img {
+    max-height: 100%;
+    max-width: 100%;
+  }
+}
+
+#tokens .token {
+  margin-right: 5px;
+  padding: 5px;
+  border-radius: 2px;
+  line-height: 1;
+  display: inline-block;
+}
+
+#resultPanel {
+  width: 65%;
+  margin-right: 20px;
+}
+
+#slimePanel {
+  width: 35%;
+}
