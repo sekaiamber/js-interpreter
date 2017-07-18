@@ -9,3 +9,5 @@
 包括：
 
 * [Slime](https://github.com/sekaiamber/js-interpreter/tree/master/examples/slime)
+
+另外，本项目拥有一篇十分详细的教程：[《使用JavaScript编写解释器》](https://github.com/sekaiamber/js-interpreter/tree/master/docs)。欢迎阅读指正 ^^
